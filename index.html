@@ -580,7 +580,7 @@ body {
 <!-- WIN OVERLAY -->
 <div class="win-overlay" id="win-ov">
   <div class="win-card">
-    <div class="win-emoji" id="win-emoji">🏆</div>
+    <div class="win-emoji" id="win-emoji">🏴</div>
     <div class="win-title" id="win-title">You Won!</div>
     <div class="win-sub" id="win-sub">Best of 5</div>
     <div class="win-btns">
@@ -966,7 +966,7 @@ function updateBf5Dots() {
 function showWinOverlay(winner) {
   gameOver=true;
   const isP1=winner==='p1';
-  document.getElementById('win-emoji').textContent = isP1?'🏆':'🎯';
+  document.getElementById('win-emoji').textContent = isP1?'🏴':'🏳️';
   document.getElementById('win-title').textContent = isP1
     ? (mode==='cpu'?'You Won!':'Player 1 Wins!')
     : (mode==='cpu'?'CPU Wins!':'Player 2 Wins!');
