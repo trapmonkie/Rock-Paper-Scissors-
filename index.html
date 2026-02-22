@@ -1,20 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>Rock · Paper · Scissors</title>
   
-  <link rel="preload" href="images/white-rock-rps.PNG" as="image">
-  <link rel="preload" href="images/white-paper-rps.PNG" as="image">
-  <link rel="preload" href="images/white-scissors-rps.PNG" as="image">
-  <link rel="preload" href="images/black-rock-rps.PNG" as="image">
-  <link rel="preload" href="images/black-paper-rps.PNG" as="image">
-  <link rel="preload" href="images/black-scissors-rps.PNG" as="image">
+  <!-- Preload the correct theme PNGs -->
+  <script>
+    (function() {
+      try {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const images = isLight 
+          ? ['white-rock-rps.PNG', 'white-paper-rps.PNG', 'white-scissors-rps.PNG']
+          : ['black-rock-rps.PNG', 'black-paper-rps.PNG', 'black-scissors-rps.PNG'];
+        
+        images.forEach(img => {
+          const link = document.createElement('link');
+          link.rel = 'preload'; link.as = 'image'; link.href = img;
+          document.head.appendChild(link);
+        });
+      } catch(e) {}
+    })();
+  </script>
 
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
-
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -25,67 +35,145 @@
     [data-theme=dark] {
       --bg: #0c0c0c; --text: #f0eeeb; --muted: rgba(240,238,235,0.28); --border: rgba(240,238,235,0.08);
       --surface: rgba(24,24,24,0.88); --btn: #f0eeeb; --btn-fg: #0c0c0c;
+      --win: #50c87c; --lose: #e0506a; --tie: #aaa;
     }
-
-    body {
-      font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text);
-      height: 100dvh; display: flex; flex-direction: column; align-items: center;
-      max-width: 430px; margin: 0 auto; overflow: hidden; position: relative;
+    html, body { 
+      height: 100%; 
+      font-family: 'Outfit', sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      max-width: 430px; 
+      margin: 0 auto; 
+      overflow-x: hidden;
+      overflow-y: auto; 
+      position: relative; 
       transition: background var(--tr), color var(--tr);
-      padding-top: env(safe-area-inset-top, 0);
+      -webkit-tap-highlight-color: transparent;
     }
-
+    
     /* Header & Network Indicator */
-    .hdr { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
+    .hdr { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; flex-shrink: 0; }
     .hdr-title { font-size: 0.56rem; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); }
     .hdr-right { display: flex; align-items: center; gap: 12px; }
+    
     .net-status { display: flex; align-items: center; gap: 6px; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
     .net-dot { width: 8px; height: 8px; border-radius: 50%; background: #50c87c; transition: background 0.3s; }
-    .net-dot.offline { background: #e0506a; box-shadow: 0 0 8px rgba(224, 80, 106, 0.4); }
-
-    /* Score & Dots */
-    .score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-    .score-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 50px; padding: 6px 16px; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(12px); }
-    .sn { font-size: 1rem; font-weight: 600; min-width: 14px; text-align: center; }
+    .net-dot.offline { background: #e0506a; }
     
-    .bf5 { display: flex; gap: 8px; margin-top: 15px; }
-    .bf5-dot { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--border); transition: all 0.4s; }
-    .bf5-dot.p1 { background: var(--text); border-color: var(--text); transform: scale(1.2); }
-    .bf5-dot.p2 { background: var(--lose); border-color: var(--lose); transform: scale(1.2); }
-    .bf5-dot.tie { background: var(--tie); border-color: var(--tie); }
-
-    /* Stage */
-    .stage-wrap { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
-    .stage { width: 100%; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 30px; }
-    .obj { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.4s ease; -webkit-tap-highlight-color: transparent; }
-    .obj img { height: clamp(140px, 34vw, 200px); width: auto; pointer-events: none; animation: float 4s ease-in-out infinite; }
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .obj.selected { transform: translateY(-12px) scale(1.06); }
-    .obj.dimmed { opacity: 0.1; transform: scale(0.85); pointer-events: none; }
+    .speaker-btn { 
+      width: 30px; height: 30px; background: none; border: none; cursor: pointer; 
+      display: flex; align-items: center; justify-content: center; color: var(--muted); 
+      transition: color 0.2s; outline: none; padding: 0; 
+      touch-action: manipulation;
+    }
+    .speaker-btn:active { opacity: 0.6; }
+    .speaker-btn.offline { opacity: 0.3; pointer-events: none; }
+    .speaker-btn svg { width: 17px; height: 17px; }
     
-    /* Play Row */
-    .play-row { padding: 10px 20px 20px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
-    .pbtn { background: var(--btn); color: var(--btn-fg); border: none; border-radius: 50px; padding: 15px; width: 100%; font-family: 'Outfit'; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: transform 0.2s; }
-    .pbtn:disabled { opacity: 0.2; cursor: not-allowed; }
-    .chal-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; padding: 10px; font-family: 'Outfit'; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.3s; }
-    .chal-btn.accepted { color: var(--win); border-color: var(--win); opacity: 0.8; pointer-events: none; }
+    .toggle { 
+      width: 36px; height: 20px; background: var(--border); border: 1px solid var(--border); 
+      border-radius: 20px; cursor: pointer; position: relative; transition: all var(--tr); 
+      outline: none; touch-action: manipulation;
+    }
+    .toggle::after { 
+      content: ''; position: absolute; width: 13px; height: 13px; background: var(--text); 
+      border-radius: 50%; top: 50%; left: 3px; transform: translateY(-50%); 
+      transition: left var(--tr), background var(--tr); 
+    }
+    [data-theme=dark] .toggle::after { left: calc(100% - 16px); }
 
-    /* History */
-    .history { width: 100%; padding: 0 20px 20px; }
-    .hlbl { font-size: 0.5rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-    .hitem { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 9px 15px; display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted); margin-bottom: 4px; }
+    /* Score */
+    .score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-shrink: 0; }
+    .score-pill { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 50px; 
+      padding: 6px 16px; display: flex; align-items: center; gap: 7px; 
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
+    }
+    .sl { font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+    .sn { font-size: 1rem; font-weight: 600; min-width: 13px; text-align: center; }
+    .sdot { color: var(--muted); font-size: 0.7rem; }
 
+    /* Stage & Objects */
+    .stage-wrap { flex: 1; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; min-height: 240px; }
+    .stage { width: 100%; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; }
+    .obj { 
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; 
+      cursor: pointer; transition: opacity 0.4s ease, transform 0.4s; 
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    
+    .obj img { width: auto; height: auto; max-width: 100%; object-fit: contain; display: block; pointer-events: none; animation: float 4s ease-in-out infinite; }
+    
+    #o-rock img { height: clamp(140px,32vw,190px); max-width: 100px; animation-delay: 0s; }
+    #o-paper img { height: clamp(110px,25vw,155px); max-width: 115px; animation-delay: 1.1s; }
+    #o-scissors img { height: clamp(148px,34vw,198px); max-width: 72px; animation-delay: 2.2s; }
+    .obj-lbl { font-size: 0.5rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+    
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .obj.selected { transform: translateY(-12px) scale(1.04); }
+    .obj.selected img { filter: brightness(1.18); }
+    .obj.dimmed { opacity: 0; transform: scale(0.7) translateY(20px); pointer-events: none; }
+
+    /* Play & Challenge Buttons */
+    .play-row { padding: 10px 20px 0; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
+    .pbtn { 
+      background: var(--btn); color: var(--btn-fg); border: none; border-radius: 50px; 
+      padding: 13px 0; width: 100%; max-width: 260px; font-family: 'Outfit'; 
+      font-size: 0.76rem; font-weight: 500; letter-spacing: 2.5px; text-transform: uppercase; 
+      cursor: pointer; transition: transform 0.2s; touch-action: manipulation;
+    }
+    .pbtn:active { transform: scale(0.96); }
+    .pbtn:disabled { opacity: 0.2; pointer-events: none; }
+    
+    .cbtn { 
+      background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; 
+      padding: 8px 16px; font-family: 'Outfit'; font-size: 0.6rem; letter-spacing: 1px; 
+      text-transform: uppercase; cursor: pointer; transition: all 0.2s; touch-action: manipulation;
+    }
+    .cbtn:hover { color: var(--text); border-color: var(--text); }
+    .cbtn.offline { opacity: 0.35; pointer-events: none; }
+    .cbtn-status { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .spinner { width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--text); border-radius: 50%; animation: spin 0.8s linear infinite; display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* History & Modals */
+    .history { width: 100%; padding: 10px 20px 0; display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; }
+    .hlbl { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .hlist { display: flex; flex-direction: column; gap: 4px; }
+    .hitem { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 9px; 
+      padding: 7px 12px; display: flex; justify-content: space-between; font-size: 0.64rem; 
+      color: var(--muted); animation: fadeUp 0.2s ease; 
+    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .hres.win{color:var(--win);} .hres.lose{color:var(--lose);} .hres.tie{color:var(--tie);}
+    
     /* Result Overlay */
-    .win-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: 0.4s; background: rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
+    .win-overlay { 
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; 
+      justify-content: center; z-index: 100; opacity: 0; pointer-events: none; 
+      transition: opacity 0.4s; background: rgba(0,0,0,0.2); backdrop-filter: blur(3px); 
+    }
     .win-overlay.show { opacity: 1; pointer-events: all; }
-    .win-card { background: var(--surface); padding: 40px; border-radius: 30px; text-align: center; width: 85%; max-width: 300px; border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
-    
-    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 99; }
+    .win-card { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 24px; 
+      padding: 32px 40px; text-align: center; box-shadow: 0 20px 70px rgba(0,0,0,0.18); 
+      max-width: 300px; width: 82vw; transform: translateY(20px); transition: transform 0.4s; 
+    }
+    .win-overlay.show .win-card { transform: translateY(0); }
+    .win-icon { margin-bottom: 12px; color: var(--text); }
+    .win-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 24px; }
+
+    /* mobile safe area */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      body { padding-bottom: env(safe-area-inset-bottom); }
+    }
   </style>
 </head>
 <body>
-
-<canvas id="confetti"></canvas>
 
 <div class="hdr">
   <span class="hdr-title">RPS</span>
@@ -94,239 +182,378 @@
       <div class="net-dot" id="net-dot"></div>
       <span id="net-lbl">Online</span>
     </div>
-    <div style="cursor:pointer; opacity:0.6" onclick="toggleTheme()">🌓</div>
+    
+    <button class="speaker-btn" id="speaker-btn" onclick="toggleMute()">
+      <svg id="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      <svg id="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+    </button>
+    <button class="toggle" onclick="toggleTheme()"></button>
   </div>
 </div>
 
 <div class="score-wrap">
-  <div class="score-pill"><span>You</span><span class="sn" id="s1">0</span></div>
-  <div class="score-pill"><span class="sn" id="s2">0</span><span id="p2lbl">CPU</span></div>
-</div>
-
-<div class="bf5" id="bf5">
-  <div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div>
+  <div class="score-pill"><span class="sl">You</span><span class="sn" id="s1">0</span></div>
+  <span class="sdot">·</span>
+  <div class="score-pill"><span class="sn" id="s2">0</span><span class="sl" id="p2lbl">CPU</span></div>
 </div>
 
 <div class="stage-wrap">
-  <div class="stage">
-    <div class="obj" id="o-rock" onclick="pick('rock')">
-      <img id="i-rock" src="images/white-rock-rps.PNG">
+  <div class="stage" id="stage">
+    <div class="obj idle" id="o-rock" onclick="pick('rock')">
+      <img id="i-rock" src="" alt="Rock" decoding="async" loading="eager">
+      <div class="obj-lbl">Rock</div>
     </div>
-    <div class="obj" id="o-paper" onclick="pick('paper')">
-      <img id="i-paper" src="images/white-paper-rps.PNG">
+    <div class="obj idle" id="o-paper" onclick="pick('paper')">
+      <img id="i-paper" src="" alt="Paper" decoding="async" loading="eager">
+      <div class="obj-lbl">Paper</div>
     </div>
-    <div class="obj" id="o-scissors" onclick="pick('scissors')">
-      <img id="i-scissors" src="images/white-scissors-rps.PNG">
+    <div class="obj idle" id="o-scissors" onclick="pick('scissors')">
+      <img id="i-scissors" src="" alt="Scissors" decoding="async" loading="eager">
+      <div class="obj-lbl">Scissors</div>
     </div>
   </div>
 </div>
 
 <div class="play-row">
-  <button class="pbtn" id="pbtn" onclick="playRound()" disabled>Play</button>
-  <button class="chal-btn" id="chal-btn" onclick="initChallenge()">Challenge a Friend</button>
+  <button class="pbtn" id="pbtn" onclick="startRound()" disabled>Play</button>
+  
+  <button class="cbtn" id="chal-btn" onclick="initChallenge()">
+    <div class="cbtn-status">
+      <div class="spinner" id="c-spinner"></div>
+      <svg id="c-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.4 1.12 2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16z"/>
+      </svg>
+      <span id="c-text">Challenge a Friend</span>
+    </div>
+  </button>
 </div>
 
 <div class="history">
   <div class="hlbl">Recent</div>
-  <div id="hlist"></div>
+  <div class="hlist" id="hlist"></div>
 </div>
 
 <div class="win-overlay" id="win-ov">
   <div class="win-card">
-    <h2 id="win-title" style="letter-spacing:1px; text-transform:uppercase; font-size:1rem; font-weight:600;">Result</h2>
-    <button class="pbtn" style="margin-top:25px; padding: 12px;" onclick="resetRound()">Next Round</button>
+    <div class="win-icon" id="win-icon"></div>
+    <div class="win-title" id="win-title">Result</div>
+    <button class="pbtn" style="width: 80%; padding: 10px 0;" onclick="rematch()">Next Round</button>
   </div>
 </div>
 
-<audio id="bgm" src="Chrono_Echoes_rockpaperscissors.mp3" loop></audio>
+<!-- Audio with default low volume, loop, and no autoplay -->
+<audio id="bgm" src="Chrono_Echoes_rockpaperscissors.mp3" loop preload="auto" volume="0.2"></audio>
 
 <script>
-  let myScore=0, oppScore=0, roundIndex=0, myMove=null, oppMove=null, peer, conn, isMP=false;
-  const bgm = document.getElementById('bgm');
-  bgm.volume = 0.22;
+// ══════════════════════════════════════
+//  SERVICE WORKER REGISTRATION (optional)
+// ══════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW Registration Failed:', err));
+  });
+}
 
-  // 1. Peer Connection Resilience
-  function setupPeer() {
-    peer = new Peer();
-    peer.on('open', id => {
-      const joinId = new URLSearchParams(window.location.search).get('g');
-      if(joinId) connectToPeer(joinId);
-    });
-    peer.on('connection', c => {
-      conn = c;
-      setupConnection();
-    });
-    peer.on('error', err => {
-      console.error(err);
-      handleDisconnect();
-    });
-  }
+// ══════════════════════════════════════
+//  ASSETS & THEME-AWARE SVG FALLBACKS
+// ══════════════════════════════════════
+const ASSETS = {
+  rock: { dark: 'black-rock-rps.PNG', light: 'white-rock-rps.PNG' },
+  paper: { dark: 'black-paper-rps.PNG', light: 'white-paper-rps.PNG' },
+  scissors: { dark: 'black-scissors-rps.PNG', light: 'white-scissors-rps.PNG' }
+};
 
-  function connectToPeer(id) {
-    conn = peer.connect(id);
-    setupConnection();
-  }
+// Returns an SVG that matches the current theme color (black or white)
+function getOfflineSvg(type, theme) {
+  const color = theme === 'dark' ? '%23f0eeeb' : '%23111'; // #f0eeeb or #111
+  if (type === 'rock') return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="${color}"/></svg>`;
+  if (type === 'paper') return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="${color}"/></svg>`;
+  if (type === 'scissors') return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4l16 16M4 20L20 4" stroke="${color}" stroke-width="4" stroke-linecap="round"/></svg>`;
+}
 
-  function setupConnection() {
-    isMP = true;
-    document.getElementById('p2lbl').innerText = "P2";
-    const btn = document.getElementById('chal-btn');
-    btn.innerText = "Challenge Accepted";
-    btn.classList.add('accepted');
-    btn.disabled = true;
+const WIN_SVGS = {
+  win: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M8 21h8M12 17v4M7 4h10M5 4v5a2 2 0 002 2h10a2 2 0 002-2V4M3 4h18M5 9c-2 0-3-1-3-3s1-3 3-3h14c2 0 3 1 3 3s-1 3-3 3"/></svg>`,
+  lose: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`
+};
 
-    conn.on('data', data => {
-      if(data.type === 'MOVE') {
-        oppMove = data.move;
-        if(myMove) resolve();
-      }
-    });
-
-    conn.on('close', handleDisconnect);
-  }
-
-  function handleDisconnect() {
-    isMP = false;
-    if(conn) conn.close();
-    document.getElementById('p2lbl').innerText = "CPU";
-    document.getElementById('chal-btn').innerText = "Challenge a Friend";
-    document.getElementById('chal-btn').classList.remove('accepted');
-    document.getElementById('chal-btn').disabled = false;
-    // Clear Score on disconnect
-    myScore = 0; oppScore = 0; roundIndex = 0;
-    updateUI();
-    const dots = document.querySelectorAll('.bf5-dot');
-    dots.forEach(d => d.className = 'bf5-dot');
-  }
-
-  // 2. Gameplay Logic
-  function pick(m) {
-    myMove = m;
-    if(bgm.paused) bgm.play();
-    document.querySelectorAll('.obj').forEach(o => o.classList.add('dimmed'));
-    document.getElementById(`o-${m}`).classList.remove('dimmed');
-    document.getElementById(`o-${m}`).classList.add('selected');
-    document.getElementById('pbtn').disabled = false;
-  }
-
-  function playRound() {
-    if(isMP) {
-      conn.send({type: 'MOVE', move: myMove});
-      if(oppMove) resolve();
-      else document.getElementById('pbtn').innerText = "Waiting...";
-    } else {
-      oppMove = ['rock', 'paper', 'scissors'][Math.floor(Math.random()*3)];
-      resolve();
-    }
-  }
-
-  function resolve() {
-    let res = 'tie';
-    if((myMove==='rock'&&oppMove==='scissors')||(myMove==='paper'&&oppMove==='rock')||(myMove==='scissors'&&oppMove==='paper')) {
-      res = 'win'; myScore++;
-    } else if(myMove !== oppMove) {
-      res = 'lose'; oppScore++;
-    }
-
-    // Update 5-dot round indicator
-    const dots = document.querySelectorAll('.bf5-dot');
-    if(roundIndex < 5) {
-      dots[roundIndex].classList.add(res === 'win' ? 'p1' : (res === 'lose' ? 'p2' : 'tie'));
-      roundIndex++;
-    }
-
-    showResult(res);
-  }
-
-  function showResult(res) {
-    updateUI();
-    document.getElementById('win-title').innerText = res === 'win' ? 'You Won' : (res === 'lose' ? 'Opponent Won' : 'Tie');
-    document.getElementById('win-ov').classList.add('show');
-    if(res === 'win') launchConfetti();
-    saveHistory(res, myMove, oppMove);
-  }
-
-  function updateUI() {
-    document.getElementById('s1').innerText = myScore;
-    document.getElementById('s2').innerText = oppScore;
-  }
-
-  function resetRound() {
-    myMove = null; oppMove = null;
-    document.getElementById('win-ov').classList.remove('show');
-    document.querySelectorAll('.obj').forEach(o => o.classList.remove('dimmed', 'selected'));
-    document.getElementById('pbtn').disabled = true;
-    document.getElementById('pbtn').innerText = "Play";
-  }
-
-  // 3. Helpers
-  function toggleTheme() {
-    const root = document.documentElement;
-    const isDark = root.getAttribute('data-theme') === 'dark';
-    root.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    const color = isDark ? 'white' : 'black';
-    ['rock','paper','scissors'].forEach(k => {
-      document.getElementById(`i-${k}`).src = `images/${color}-${k}-rps.PNG`;
-    });
-  }
-
-  function updateNet() {
-    const on = navigator.onLine;
-    document.getElementById('net-dot').className = on ? 'net-dot' : 'net-dot offline';
-    document.getElementById('net-lbl').innerText = on ? 'Online' : 'Offline';
-  }
-
-  function initChallenge() {
-    const link = `${window.location.origin}${window.location.pathname}?g=${peer.id}`;
-    if(navigator.share) navigator.share({ text: `Play RPS with me: ${link}` });
-    else prompt("Copy this link to invite a friend:", link);
-  }
-
-  function saveHistory(res, m1, m2) {
-    let h = JSON.parse(localStorage.getItem('rps_h') || '[]');
-    h.unshift({res, m1, m2});
-    localStorage.setItem('rps_h', JSON.stringify(h.slice(0,5)));
-    renderHistory();
-  }
-
-  function renderHistory() {
-    const list = document.getElementById('hlist');
-    const h = JSON.parse(localStorage.getItem('rps_h') || '[]');
-    list.innerHTML = h.map(i => `
-      <div class="hitem">
-        <span style="text-transform: capitalize;">${i.m1} • ${i.m2}</span>
-        <span style="color:var(--${i.res}); font-weight:600;">${i.res.toUpperCase()}</span>
-      </div>
-    `).join('');
-  }
-
-  function launchConfetti() {
-    const canvas = document.getElementById('confetti');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    let particles = Array.from({length: 40}, () => ({
-      x: Math.random() * canvas.width, y: -20,
-      size: Math.random() * 4 + 2, speed: Math.random() * 3 + 3,
-      color: `hsla(${Math.random() * 360}, 60%, 50%, 0.8)`, drift: Math.random() * 2 - 1
-    }));
-    function frame() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.y += p.speed; p.x += p.drift;
-        ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-      });
-      if (particles.some(p => p.y < canvas.height)) requestAnimationFrame(frame);
-    }
-    frame();
-  }
-
-  window.onload = () => {
-    setupPeer();
-    updateNet();
-    renderHistory();
-    window.addEventListener('online', updateNet);
-    window.addEventListener('offline', updateNet);
+function loadImages(theme) {
+  const applyImage = (id, type, pngSrc) => {
+    const img = document.getElementById(id);
+    img.onerror = () => { img.src = getOfflineSvg(type, theme); }; 
+    img.src = pngSrc;
   };
+  applyImage('i-rock', 'rock', ASSETS.rock[theme]);
+  applyImage('i-paper', 'paper', ASSETS.paper[theme]);
+  applyImage('i-scissors', 'scissors', ASSETS.scissors[theme]);
+}
+
+// ══════════════════════════════════════
+//  GAME STATE & NETWORK LOGIC
+// ══════════════════════════════════════
+let myScore = 0, oppScore = 0;
+let myMove = null, oppMove = null;
+let peer = null, conn = null;
+let challengeTimer = null;
+let bgm = document.getElementById('bgm');
+let audioAllowed = false; // becomes true after first user interaction
+
+// Set default low volume
+bgm.volume = 0.2;
+
+window.onload = () => {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  loadImages(isLight ? 'light' : 'dark');
+  
+  checkNetwork();
+  window.addEventListener('online', checkNetwork);
+  window.addEventListener('offline', checkNetwork);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const joinCode = urlParams.get('join');
+  
+  peer = new Peer(Math.random().toString(36).substring(2, 8).toUpperCase());
+  peer.on('open', id => {
+    if (joinCode) connectToPeer(joinCode);
+  });
+  peer.on('connection', c => {
+    conn = c;
+    setupConnection();
+  });
+  peer.on('error', handleDisconnect);
+};
+
+// Function to attempt playing audio (only if online and allowed)
+function tryPlayAudio() {
+  if (!navigator.onLine) return false;
+  if (!audioAllowed) {
+    // First interaction – allow and play
+    audioAllowed = true;
+    bgm.play().catch(() => {}); // may fail if not online, but we already checked
+    return true;
+  }
+  return true;
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const isDark = root.getAttribute('data-theme') === 'dark';
+  const newTheme = isDark ? 'light' : 'dark';
+  root.setAttribute('data-theme', newTheme);
+  loadImages(newTheme);
+}
+
+function toggleMute() {
+  if (!navigator.onLine) return; // no audio when offline
+  if (bgm.paused) {
+    bgm.play().catch(() => {});
+    document.getElementById('ico-on').style.display = 'none';
+    document.getElementById('ico-off').style.display = 'block';
+  } else {
+    bgm.pause();
+    document.getElementById('ico-on').style.display = 'block';
+    document.getElementById('ico-off').style.display = 'none';
+  }
+}
+
+function checkNetwork() {
+  const dot = document.getElementById('net-dot');
+  const lbl = document.getElementById('net-lbl');
+  const chalBtn = document.getElementById('chal-btn');
+  const speakerBtn = document.getElementById('speaker-btn');
+  
+  if (navigator.onLine) {
+    dot.classList.remove('offline');
+    lbl.innerText = 'Online';
+    chalBtn.classList.remove('offline');
+    speakerBtn.classList.remove('offline');
+  } else {
+    dot.classList.add('offline');
+    lbl.innerText = 'Offline';
+    chalBtn.classList.add('offline');
+    speakerBtn.classList.add('offline');
+    // Pause audio if playing
+    if (!bgm.paused) {
+      bgm.pause();
+      document.getElementById('ico-on').style.display = 'block';
+      document.getElementById('ico-off').style.display = 'none';
+    }
+    resetChallengeBtn();
+  }
+}
+
+// ══════════════════════════════════════
+//  CHALLENGE & DISCONNECT HANDLING
+// ══════════════════════════════════════
+function initChallenge() {
+  if (!navigator.onLine) return;
+  if (!peer || !peer.id) return alert("Connecting to server, please wait...");
+
+  document.getElementById('c-spinner').style.display = 'block';
+  document.getElementById('c-icon').style.display = 'none';
+  document.getElementById('c-text').innerText = "Waiting for friend...";
+  
+  const link = `${window.location.origin}${window.location.pathname}?join=${peer.id}`;
+  const msg = `Play Rock Paper Scissors with me! Tap here: ${link}`;
+
+  if (navigator.share) {
+    navigator.share({ text: msg }).catch(err => console.log("Share canceled", err));
+  } else {
+    window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
+  }
+
+  clearTimeout(challengeTimer);
+  challengeTimer = setTimeout(() => {
+    if (!conn || !conn.open) {
+      resetChallengeBtn();
+    }
+  }, 30000); 
+}
+
+function resetChallengeBtn() {
+  document.getElementById('chal-btn').style.display = 'flex';
+  document.getElementById('c-spinner').style.display = 'none';
+  document.getElementById('c-icon').style.display = 'block';
+  document.getElementById('c-text').innerText = "Challenge a Friend";
+}
+
+function connectToPeer(id) {
+  conn = peer.connect(id);
+  setupConnection();
+}
+
+function setupConnection() {
+  clearTimeout(challengeTimer);
+  
+  document.getElementById('chal-btn').style.display = 'none'; 
+  document.getElementById('p2lbl').innerText = "P2"; 
+  myScore = 0; oppScore = 0; 
+  updateScoreUI();
+
+  conn.on('data', data => {
+    if (data.type === 'MOVE') {
+      oppMove = data.choice;
+      if (myMove) resolveRound();
+    }
+  });
+
+  conn.on('close', handleDisconnect);
+}
+
+function handleDisconnect() {
+  if (conn) { conn.close(); conn = null; }
+  document.getElementById('p2lbl').innerText = "CPU";
+  myScore = 0; oppScore = 0;
+  updateScoreUI();
+  resetChallengeBtn();
+}
+
+// ══════════════════════════════════════
+//  CORE GAMEPLAY & UI
+// ══════════════════════════════════════
+function pick(choice) {
+  // First user interaction – try to play audio
+  tryPlayAudio();
+
+  myMove = choice;
+  
+  document.querySelectorAll('.obj').forEach(el => el.classList.remove('selected', 'dimmed'));
+  const selectedObj = document.getElementById(`o-${choice}`);
+  selectedObj.classList.add('selected');
+  document.querySelectorAll('.obj').forEach(el => {
+    if (el !== selectedObj) el.classList.add('dimmed');
+  });
+
+  document.getElementById('pbtn').disabled = false;
+}
+
+function startRound() {
+  if (!myMove) return;
+  // Another interaction point
+  tryPlayAudio();
+
+  document.getElementById('pbtn').disabled = true;
+
+  if (conn && conn.open) {
+    conn.send({ type: 'MOVE', choice: myMove });
+    if (oppMove) {
+      resolveRound();
+    } else {
+      document.getElementById('pbtn').innerText = "Waiting for P2...";
+    }
+  } else {
+    const choices = ['rock', 'paper', 'scissors'];
+    oppMove = choices[Math.floor(Math.random() * 3)];
+    resolveRound();
+  }
+}
+
+function resolveRound() {
+  document.getElementById('pbtn').innerText = "Play";
+  
+  let result = 'tie';
+  if ((myMove === 'rock' && oppMove === 'scissors') || 
+      (myMove === 'paper' && oppMove === 'rock') || 
+      (myMove === 'scissors' && oppMove === 'paper')) {
+    result = 'win';
+    myScore++;
+  } else if (myMove !== oppMove) {
+    result = 'lose';
+    oppScore++;
+  }
+  
+  updateScoreUI();
+  updateHistory(result, myMove, oppMove);
+  showResult(result);
+  
+  myMove = null; oppMove = null;
+}
+
+function updateScoreUI() {
+  document.getElementById('s1').innerText = myScore;
+  document.getElementById('s2').innerText = oppScore;
+}
+
+function updateHistory(res, m1, m2) {
+  const hlist = document.getElementById('hlist');
+  const div = document.createElement('div');
+  div.className = 'hitem';
+  const label = res === 'win' ? 'You Won' : (res === 'lose' ? 'P2 Won' : 'Tie');
+  
+  div.innerHTML = `
+    <span class="hmoves">${m1} <span class="sdot">•</span> ${m2}</span>
+    <span class="hres ${res}">${label}</span>
+  `;
+  hlist.prepend(div);
+  
+  if (hlist.children.length > 5) {
+    hlist.removeChild(hlist.lastChild);
+  }
+}
+
+function showResult(result) {
+  const modal = document.getElementById('win-ov');
+  const icon = document.getElementById('win-icon');
+  const title = document.getElementById('win-title');
+  const opponentName = (conn && conn.open) ? "P2" : "CPU";
+  
+  if (result === 'win') {
+    icon.innerHTML = WIN_SVGS.win;
+    title.innerText = "You Won!";
+  } else if (result === 'lose') {
+    icon.innerHTML = WIN_SVGS.lose;
+    title.innerText = `${opponentName} Won`;
+  } else {
+    icon.innerHTML = "";
+    title.innerText = "It's a Tie";
+  }
+  
+  modal.classList.add('show');
+}
+
+function rematch() {
+  document.getElementById('win-ov').classList.remove('show');
+  document.querySelectorAll('.obj').forEach(el => el.classList.remove('selected', 'dimmed'));
+}
 </script>
 </body>
 </html>
