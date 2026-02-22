@@ -5,25 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Rock · Paper · Scissors</title>
-  
-  <!-- Preload the correct theme PNGs -->
-  <script>
-    (function() {
-      try {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-        const images = isLight 
-          ? ['white-rock-rps.PNG', 'white-paper-rps.PNG', 'white-scissors-rps.PNG']
-          : ['black-rock-rps.PNG', 'black-paper-rps.PNG', 'black-scissors-rps.PNG'];
-        
-        images.forEach(img => {
-          const link = document.createElement('link');
-          link.rel = 'preload'; link.as = 'image'; link.href = img;  // remove /images/ if files are in root
-          document.head.appendChild(link);
-        });
-      } catch(e) {}
-    })();
-  </script>
-
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -67,10 +48,7 @@
     .stage-wrap { flex: 1; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; }
     .stage { width: 100%; height: 100%; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; }
     .obj { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; cursor: pointer; transition: opacity 0.4s ease, transform 0.4s; -webkit-tap-highlight-color: transparent; }
-    
-    /* Image Consistency & Compression Handling */
-    .obj img { width: auto; height: auto; max-width: 100%; object-fit: contain; display: block; pointer-events: none; animation: float 4s ease-in-out infinite; }
-    
+    .obj img { display: block; object-fit: contain; pointer-events: none; animation: float 4s ease-in-out infinite; }
     #o-rock img { height: clamp(140px,32vw,190px); max-width: 100px; animation-delay: 0s; }
     #o-paper img { height: clamp(110px,25vw,155px); max-width: 115px; animation-delay: 1.1s; }
     #o-scissors img { height: clamp(148px,34vw,198px); max-width: 72px; animation-delay: 2.2s; }
@@ -89,7 +67,6 @@
     
     .cbtn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; padding: 8px 16px; font-family: 'Outfit'; font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
     .cbtn:hover { color: var(--text); border-color: var(--text); }
-    .cbtn.offline { opacity: 0.35; pointer-events: none; }
     .cbtn-status { display: flex; align-items: center; justify-content: center; gap: 8px; }
     .spinner { width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--text); border-radius: 50%; animation: spin 0.8s linear infinite; display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -138,15 +115,15 @@
 <div class="stage-wrap">
   <div class="stage" id="stage">
     <div class="obj idle" id="o-rock" onclick="pick('rock')">
-      <img id="i-rock" src="" alt="Rock" decoding="async" loading="eager">
+      <img id="i-rock" src="" alt="Rock" decoding="async">
       <div class="obj-lbl">Rock</div>
     </div>
     <div class="obj idle" id="o-paper" onclick="pick('paper')">
-      <img id="i-paper" src="" alt="Paper" decoding="async" loading="eager">
+      <img id="i-paper" src="" alt="Paper" decoding="async">
       <div class="obj-lbl">Paper</div>
     </div>
     <div class="obj idle" id="o-scissors" onclick="pick('scissors')">
-      <img id="i-scissors" src="" alt="Scissors" decoding="async" loading="eager">
+      <img id="i-scissors" src="" alt="Scissors" decoding="async">
       <div class="obj-lbl">Scissors</div>
     </div>
   </div>
@@ -183,16 +160,7 @@
 
 <script>
 // ══════════════════════════════════════
-//  SERVICE WORKER REGISTRATION (optional)
-// ══════════════════════════════════════
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW Registration Failed:', err));
-  });
-}
-
-// ══════════════════════════════════════
-//  ASSETS & THEME-AWARE SVG FALLBACKS
+//  ASSETS & OFFLINE FALLBACKS
 // ══════════════════════════════════════
 const ASSETS = {
   rock: { dark: 'black-rock-rps.PNG', light: 'white-rock-rps.PNG' },
@@ -200,13 +168,12 @@ const ASSETS = {
   scissors: { dark: 'black-scissors-rps.PNG', light: 'white-scissors-rps.PNG' }
 };
 
-// Returns an SVG that matches the current theme color (black or white)
-function getOfflineSvg(type, theme) {
-  const color = theme === 'dark' ? '%23f0eeeb' : '%23111'; // #f0eeeb or #111
-  if (type === 'rock') return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="${color}"/></svg>`;
-  if (type === 'paper') return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="${color}"/></svg>`;
-  if (type === 'scissors') return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4l16 16M4 20L20 4" stroke="${color}" stroke-width="4" stroke-linecap="round"/></svg>`;
-}
+// Perfect Geometric SVGs: Circle, Square, X
+const OFFLINE_SVGS = {
+  rock: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23888"/></svg>`,
+  paper: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="%23888"/></svg>`,
+  scissors: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4l16 16M4 20L20 4" stroke="%23888" stroke-width="4" stroke-linecap="round"/></svg>`
+};
 
 const WIN_SVGS = {
   win: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M8 21h8M12 17v4M7 4h10M5 4v5a2 2 0 002 2h10a2 2 0 002-2V4M3 4h18M5 9c-2 0-3-1-3-3s1-3 3-3h14c2 0 3 1 3 3s-1 3-3 3"/></svg>`,
@@ -214,14 +181,14 @@ const WIN_SVGS = {
 };
 
 function loadImages(theme) {
-  const applyImage = (id, type, pngSrc) => {
+  const applyImage = (id, pngSrc, svgFallback) => {
     const img = document.getElementById(id);
-    img.onerror = () => { img.src = getOfflineSvg(type, theme); }; 
+    img.onerror = () => { img.src = svgFallback; }; 
     img.src = pngSrc;
   };
-  applyImage('i-rock', 'rock', ASSETS.rock[theme]);
-  applyImage('i-paper', 'paper', ASSETS.paper[theme]);
-  applyImage('i-scissors', 'scissors', ASSETS.scissors[theme]);
+  applyImage('i-rock', ASSETS.rock[theme], OFFLINE_SVGS.rock);
+  applyImage('i-paper', ASSETS.paper[theme], OFFLINE_SVGS.paper);
+  applyImage('i-scissors', ASSETS.scissors[theme], OFFLINE_SVGS.scissors);
 }
 
 // ══════════════════════════════════════
@@ -241,6 +208,7 @@ window.onload = () => {
   window.addEventListener('online', checkNetwork);
   window.addEventListener('offline', checkNetwork);
 
+  // Auto-connect if joining from deep link
   const urlParams = new URLSearchParams(window.location.search);
   const joinCode = urlParams.get('join');
   
@@ -252,7 +220,6 @@ window.onload = () => {
     conn = c;
     setupConnection();
   });
-  peer.on('error', handleDisconnect);
 };
 
 function toggleTheme() {
@@ -271,42 +238,48 @@ function toggleMute() {
 function checkNetwork() {
   const dot = document.getElementById('net-dot');
   const lbl = document.getElementById('net-lbl');
-  const chalBtn = document.getElementById('chal-btn');
   
   if (navigator.onLine) {
     dot.classList.remove('offline');
     lbl.innerText = 'Online';
-    chalBtn.classList.remove('offline');
   } else {
     dot.classList.add('offline');
     lbl.innerText = 'Offline';
-    chalBtn.classList.add('offline');
     resetChallengeBtn();
   }
 }
 
 // ══════════════════════════════════════
-//  CHALLENGE & DISCONNECT HANDLING
+//  CHALLENGE LOGIC – opens contacts via Web Share, falls back to SMS
 // ══════════════════════════════════════
 function initChallenge() {
-  if (!navigator.onLine) return;
-  if (!peer || !peer.id) return alert("Connecting to server, please wait...");
+  if (!navigator.onLine) return alert("You are offline!");
 
   document.getElementById('c-spinner').style.display = 'block';
   document.getElementById('c-icon').style.display = 'none';
   document.getElementById('c-text').innerText = "Waiting for friend...";
   
   const link = `${window.location.origin}${window.location.pathname}?join=${peer.id}`;
-  const msg = `Play Rock Paper Scissors with me! Tap here: ${link}`;
 
-  // Native share sheet, with properly encoded SMS fallback
+  // Try Web Share (opens contact picker)
   if (navigator.share) {
-    navigator.share({ text: msg }).catch(err => console.log("Share canceled", err));
+    navigator.share({
+      title: 'Rock Paper Scissors Challenge',
+      text: 'Join me for a game of Rock Paper Scissors!',
+      url: link,
+    }).catch((err) => {
+      if (err.name !== 'AbortError') {
+        // fallback to SMS
+        window.location.href = `sms:?&body=Play RPS with me! Tap here: ${link}`;
+      }
+      resetChallengeBtn();
+    });
   } else {
-    window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
+    // Fallback to SMS
+    window.location.href = `sms:?&body=Play RPS with me! Tap here: ${link}`;
   }
 
-  // 30s timeout
+  // 30 second timeout
   clearTimeout(challengeTimer);
   challengeTimer = setTimeout(() => {
     if (!conn || !conn.open) {
@@ -316,7 +289,6 @@ function initChallenge() {
 }
 
 function resetChallengeBtn() {
-  document.getElementById('chal-btn').style.display = 'flex';
   document.getElementById('c-spinner').style.display = 'none';
   document.getElementById('c-icon').style.display = 'block';
   document.getElementById('c-text').innerText = "Challenge a Friend";
@@ -341,16 +313,6 @@ function setupConnection() {
       if (myMove) resolveRound();
     }
   });
-
-  conn.on('close', handleDisconnect);
-}
-
-function handleDisconnect() {
-  if (conn) { conn.close(); conn = null; }
-  document.getElementById('p2lbl').innerText = "CPU";
-  myScore = 0; oppScore = 0;
-  updateScoreUI();
-  resetChallengeBtn();
 }
 
 // ══════════════════════════════════════
