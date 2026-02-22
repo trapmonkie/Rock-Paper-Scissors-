@@ -3,7 +3,7 @@
 <head>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>Rock · Paper · Scissors</title>
   
   <!-- Preload the correct theme PNGs -->
@@ -17,7 +17,7 @@
         
         images.forEach(img => {
           const link = document.createElement('link');
-          link.rel = 'preload'; link.as = 'image'; link.href = img;  // remove /images/ if files are in root
+          link.rel = 'preload'; link.as = 'image'; link.href = img;
           document.head.appendChild(link);
         });
       } catch(e) {}
@@ -37,7 +37,22 @@
       --surface: rgba(24,24,24,0.88); --btn: #f0eeeb; --btn-fg: #0c0c0c;
       --win: #50c87c; --lose: #e0506a; --tie: #aaa;
     }
-    html, body { height: 100%; font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; max-width: 430px; margin: 0 auto; overflow: hidden; position: relative; transition: background var(--tr), color var(--tr); }
+    html, body { 
+      height: 100%; 
+      font-family: 'Outfit', sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      max-width: 430px; 
+      margin: 0 auto; 
+      overflow-x: hidden;
+      overflow-y: auto; 
+      position: relative; 
+      transition: background var(--tr), color var(--tr);
+      -webkit-tap-highlight-color: transparent;
+    }
     
     /* Header & Network Indicator */
     .hdr { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; flex-shrink: 0; }
@@ -48,27 +63,48 @@
     .net-dot { width: 8px; height: 8px; border-radius: 50%; background: #50c87c; transition: background 0.3s; }
     .net-dot.offline { background: #e0506a; }
     
-    .speaker-btn { width: 30px; height: 30px; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); transition: color 0.2s; outline: none; padding: 0; }
-    .speaker-btn:hover { color: var(--text); }
+    .speaker-btn { 
+      width: 30px; height: 30px; background: none; border: none; cursor: pointer; 
+      display: flex; align-items: center; justify-content: center; color: var(--muted); 
+      transition: color 0.2s; outline: none; padding: 0; 
+      touch-action: manipulation;
+    }
+    .speaker-btn:active { opacity: 0.6; }
+    .speaker-btn.offline { opacity: 0.3; pointer-events: none; }
     .speaker-btn svg { width: 17px; height: 17px; }
     
-    .toggle { width: 36px; height: 20px; background: var(--border); border: 1px solid var(--border); border-radius: 20px; cursor: pointer; position: relative; transition: all var(--tr); outline: none; }
-    .toggle::after { content: ''; position: absolute; width: 13px; height: 13px; background: var(--text); border-radius: 50%; top: 50%; left: 3px; transform: translateY(-50%); transition: left var(--tr), background var(--tr); }
+    .toggle { 
+      width: 36px; height: 20px; background: var(--border); border: 1px solid var(--border); 
+      border-radius: 20px; cursor: pointer; position: relative; transition: all var(--tr); 
+      outline: none; touch-action: manipulation;
+    }
+    .toggle::after { 
+      content: ''; position: absolute; width: 13px; height: 13px; background: var(--text); 
+      border-radius: 50%; top: 50%; left: 3px; transform: translateY(-50%); 
+      transition: left var(--tr), background var(--tr); 
+    }
     [data-theme=dark] .toggle::after { left: calc(100% - 16px); }
 
     /* Score */
     .score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-shrink: 0; }
-    .score-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 50px; padding: 6px 16px; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .score-pill { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 50px; 
+      padding: 6px 16px; display: flex; align-items: center; gap: 7px; 
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
+    }
     .sl { font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
     .sn { font-size: 1rem; font-weight: 600; min-width: 13px; text-align: center; }
     .sdot { color: var(--muted); font-size: 0.7rem; }
 
     /* Stage & Objects */
-    .stage-wrap { flex: 1; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; }
-    .stage { width: 100%; height: 100%; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; }
-    .obj { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; cursor: pointer; transition: opacity 0.4s ease, transform 0.4s; -webkit-tap-highlight-color: transparent; }
+    .stage-wrap { flex: 1; width: 100%; position: relative; display: flex; align-items: center; justify-content: center; min-height: 240px; }
+    .stage { width: 100%; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; }
+    .obj { 
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; 
+      cursor: pointer; transition: opacity 0.4s ease, transform 0.4s; 
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
     
-    /* Image Consistency & Compression Handling */
     .obj img { width: auto; height: auto; max-width: 100%; object-fit: contain; display: block; pointer-events: none; animation: float 4s ease-in-out infinite; }
     
     #o-rock img { height: clamp(140px,32vw,190px); max-width: 100px; animation-delay: 0s; }
@@ -83,11 +119,20 @@
 
     /* Play & Challenge Buttons */
     .play-row { padding: 10px 20px 0; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
-    .pbtn { background: var(--btn); color: var(--btn-fg); border: none; border-radius: 50px; padding: 13px 0; width: 100%; max-width: 260px; font-family: 'Outfit'; font-size: 0.76rem; font-weight: 500; letter-spacing: 2.5px; text-transform: uppercase; cursor: pointer; transition: transform 0.2s; }
+    .pbtn { 
+      background: var(--btn); color: var(--btn-fg); border: none; border-radius: 50px; 
+      padding: 13px 0; width: 100%; max-width: 260px; font-family: 'Outfit'; 
+      font-size: 0.76rem; font-weight: 500; letter-spacing: 2.5px; text-transform: uppercase; 
+      cursor: pointer; transition: transform 0.2s; touch-action: manipulation;
+    }
     .pbtn:active { transform: scale(0.96); }
     .pbtn:disabled { opacity: 0.2; pointer-events: none; }
     
-    .cbtn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; padding: 8px 16px; font-family: 'Outfit'; font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .cbtn { 
+      background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; 
+      padding: 8px 16px; font-family: 'Outfit'; font-size: 0.6rem; letter-spacing: 1px; 
+      text-transform: uppercase; cursor: pointer; transition: all 0.2s; touch-action: manipulation;
+    }
     .cbtn:hover { color: var(--text); border-color: var(--text); }
     .cbtn.offline { opacity: 0.35; pointer-events: none; }
     .cbtn-status { display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -98,17 +143,34 @@
     .history { width: 100%; padding: 10px 20px 0; display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; }
     .hlbl { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
     .hlist { display: flex; flex-direction: column; gap: 4px; }
-    .hitem { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 7px 12px; display: flex; justify-content: space-between; font-size: 0.64rem; color: var(--muted); animation: fadeUp 0.2s ease; }
+    .hitem { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 9px; 
+      padding: 7px 12px; display: flex; justify-content: space-between; font-size: 0.64rem; 
+      color: var(--muted); animation: fadeUp 0.2s ease; 
+    }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     .hres.win{color:var(--win);} .hres.lose{color:var(--lose);} .hres.tie{color:var(--tie);}
     
     /* Result Overlay */
-    .win-overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.4s; background: rgba(0,0,0,0.2); backdrop-filter: blur(3px); }
+    .win-overlay { 
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; 
+      justify-content: center; z-index: 100; opacity: 0; pointer-events: none; 
+      transition: opacity 0.4s; background: rgba(0,0,0,0.2); backdrop-filter: blur(3px); 
+    }
     .win-overlay.show { opacity: 1; pointer-events: all; }
-    .win-card { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 32px 40px; text-align: center; box-shadow: 0 20px 70px rgba(0,0,0,0.18); max-width: 300px; width: 82vw; transform: translateY(20px); transition: transform 0.4s; }
+    .win-card { 
+      background: var(--surface); border: 1px solid var(--border); border-radius: 24px; 
+      padding: 32px 40px; text-align: center; box-shadow: 0 20px 70px rgba(0,0,0,0.18); 
+      max-width: 300px; width: 82vw; transform: translateY(20px); transition: transform 0.4s; 
+    }
     .win-overlay.show .win-card { transform: translateY(0); }
     .win-icon { margin-bottom: 12px; color: var(--text); }
     .win-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 24px; }
+
+    /* mobile safe area */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      body { padding-bottom: env(safe-area-inset-bottom); }
+    }
   </style>
 </head>
 <body>
@@ -121,7 +183,7 @@
       <span id="net-lbl">Online</span>
     </div>
     
-    <button class="speaker-btn" onclick="toggleMute()">
+    <button class="speaker-btn" id="speaker-btn" onclick="toggleMute()">
       <svg id="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
       <svg id="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
     </button>
@@ -179,7 +241,8 @@
   </div>
 </div>
 
-<audio id="bgm" loop preload="auto" src=""></audio>
+<!-- Audio with default low volume, loop, and no autoplay -->
+<audio id="bgm" src="Chrono_Echoes_rockpaperscissors.mp3" loop preload="auto" volume="0.2"></audio>
 
 <script>
 // ══════════════════════════════════════
@@ -232,6 +295,10 @@ let myMove = null, oppMove = null;
 let peer = null, conn = null;
 let challengeTimer = null;
 let bgm = document.getElementById('bgm');
+let audioAllowed = false; // becomes true after first user interaction
+
+// Set default low volume
+bgm.volume = 0.2;
 
 window.onload = () => {
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
@@ -255,6 +322,18 @@ window.onload = () => {
   peer.on('error', handleDisconnect);
 };
 
+// Function to attempt playing audio (only if online and allowed)
+function tryPlayAudio() {
+  if (!navigator.onLine) return false;
+  if (!audioAllowed) {
+    // First interaction – allow and play
+    audioAllowed = true;
+    bgm.play().catch(() => {}); // may fail if not online, but we already checked
+    return true;
+  }
+  return true;
+}
+
 function toggleTheme() {
   const root = document.documentElement;
   const isDark = root.getAttribute('data-theme') === 'dark';
@@ -264,23 +343,40 @@ function toggleTheme() {
 }
 
 function toggleMute() {
-  if (bgm.paused) { bgm.play(); document.getElementById('ico-on').style.display='none'; document.getElementById('ico-off').style.display='block'; }
-  else { bgm.pause(); document.getElementById('ico-on').style.display='block'; document.getElementById('ico-off').style.display='none'; }
+  if (!navigator.onLine) return; // no audio when offline
+  if (bgm.paused) {
+    bgm.play().catch(() => {});
+    document.getElementById('ico-on').style.display = 'none';
+    document.getElementById('ico-off').style.display = 'block';
+  } else {
+    bgm.pause();
+    document.getElementById('ico-on').style.display = 'block';
+    document.getElementById('ico-off').style.display = 'none';
+  }
 }
 
 function checkNetwork() {
   const dot = document.getElementById('net-dot');
   const lbl = document.getElementById('net-lbl');
   const chalBtn = document.getElementById('chal-btn');
+  const speakerBtn = document.getElementById('speaker-btn');
   
   if (navigator.onLine) {
     dot.classList.remove('offline');
     lbl.innerText = 'Online';
     chalBtn.classList.remove('offline');
+    speakerBtn.classList.remove('offline');
   } else {
     dot.classList.add('offline');
     lbl.innerText = 'Offline';
     chalBtn.classList.add('offline');
+    speakerBtn.classList.add('offline');
+    // Pause audio if playing
+    if (!bgm.paused) {
+      bgm.pause();
+      document.getElementById('ico-on').style.display = 'block';
+      document.getElementById('ico-off').style.display = 'none';
+    }
     resetChallengeBtn();
   }
 }
@@ -299,14 +395,12 @@ function initChallenge() {
   const link = `${window.location.origin}${window.location.pathname}?join=${peer.id}`;
   const msg = `Play Rock Paper Scissors with me! Tap here: ${link}`;
 
-  // Native share sheet, with properly encoded SMS fallback
   if (navigator.share) {
     navigator.share({ text: msg }).catch(err => console.log("Share canceled", err));
   } else {
     window.location.href = `sms:?body=${encodeURIComponent(msg)}`;
   }
 
-  // 30s timeout
   clearTimeout(challengeTimer);
   challengeTimer = setTimeout(() => {
     if (!conn || !conn.open) {
@@ -357,6 +451,9 @@ function handleDisconnect() {
 //  CORE GAMEPLAY & UI
 // ══════════════════════════════════════
 function pick(choice) {
+  // First user interaction – try to play audio
+  tryPlayAudio();
+
   myMove = choice;
   
   document.querySelectorAll('.obj').forEach(el => el.classList.remove('selected', 'dimmed'));
@@ -371,6 +468,9 @@ function pick(choice) {
 
 function startRound() {
   if (!myMove) return;
+  // Another interaction point
+  tryPlayAudio();
+
   document.getElementById('pbtn').disabled = true;
 
   if (conn && conn.open) {
