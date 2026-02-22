@@ -39,6 +39,7 @@ body {
   font-family: 'Outfit', sans-serif;
   background: var(--bg);
   color: var(--text);
+  min-height: 100dvh;
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -144,13 +145,13 @@ body {
    In battle: player left, opponent right. 
 */
 .stage-wrap {
-  flex: 1;
+  flex: 0 0 260px;
   width: 100%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 0; /* critical for flex child */
+  overflow: visible;
 }
 
 /* Default idle: three objects side by side */
@@ -222,6 +223,7 @@ body {
 }
 .obj.selected img {
   animation: selectedPulse 2s ease-in-out infinite;
+  filter: none !important;
 }
 .obj.selected .obj-lbl { color: var(--text); }
 
@@ -304,7 +306,7 @@ body {
   align-items: center; gap: 3px;
   padding: 6px 20px 0;
   flex-shrink: 0;
-  min-height: 44px;
+  min-height: 36px;
 }
 .rpill {
   background: var(--surface); border: 1px solid var(--border);
@@ -318,11 +320,7 @@ body {
 .rpill.win  { color: var(--win); }
 .rpill.lose { color: var(--lose); }
 .rpill.tie  { color: var(--tie); }
-.rsub {
-  font-size: 0.59rem; color: var(--muted); letter-spacing: 0.3px;
-  opacity: 0; transition: opacity 0.26s 0.1s;
-}
-.rsub.show { opacity: 1; }
+.rsub { display: none; }
 
 /* ══ P2 ROW ══ */
 .p2-row {
@@ -367,7 +365,7 @@ body {
 .hlbl { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; flex-shrink: 0; }
 .hlist-scroll {
   overflow-y: auto;
-  max-height: 205px;
+  max-height: 201px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -433,8 +431,8 @@ body {
 
 /* ══ KEYFRAMES ══ */
 @keyframes selectedPulse {
-  0%,100% { transform: scale(1); filter: brightness(1.08); }
-  50%      { transform: scale(1.05); filter: brightness(1.18); }
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
 }
 @keyframes winLift {
   0%,100% { transform: translateY(0) scale(1); filter: brightness(1.1); }
@@ -449,9 +447,9 @@ body {
   50%      { filter: drop-shadow(0 0 40px var(--glow-lose)) drop-shadow(0 0 18px var(--glow-lose)); }
 }
 @keyframes introPulse {
-  0%   { transform: scale(1); filter: none; }
-  42%  { transform: scale(1.2); filter: drop-shadow(0 0 22px var(--glow-win)); }
-  100% { transform: scale(1); filter: none; }
+  0%   { transform: scale(1); }
+  42%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
 }
 @keyframes oppIn {
   from { opacity: 0; transform: translateX(28px) scale(0.78); }
@@ -702,7 +700,7 @@ body {
 <!-- RESULT -->
 <div class="result-area">
   <div class="rpill" id="rpill"></div>
-  <div class="rsub" id="rsub"></div>
+  <div class="rsub" id="rsub" style="display:none"></div>
 </div>
 
 <!-- P2 -->
@@ -821,7 +819,7 @@ const TRACK_SRC = 'data:audio/mpeg;base64,//uwRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 // ══════════════════════════════════════
 const bgm = document.getElementById('bgm');
 bgm.src = TRACK_SRC;
-bgm.volume = 0.40;
+bgm.volume = 0.18;
 bgm.loop = true;
 
 let bgmPlaying = false;
@@ -1143,7 +1141,7 @@ function showBattle(myC, oppC, res) {
     sub.className='rsub show';
 
     hist.unshift({a:myC,b:oppC,res});
-    if(hist.length>8) hist.pop();
+    if(hist.length>5) hist.pop();
     renderHist();
 
     const w5 = bf5[0]>=3?'p1': bf5[1]>=3?'p2': null;
@@ -1309,7 +1307,13 @@ function mpMakeCode() {
 }
 
 // ── UI helpers ───────────────────────────────────────────────
-function openCh()  { document.getElementById('ch-ov').classList.add('show'); if (!mpPeer || mpPeer.destroyed) initHost(); }
+function openCh()  {
+  document.getElementById('ch-ov').classList.add('show');
+  // Sender always sees Host panel only — hide tab switcher
+  document.querySelector('.ch-tabs').style.display = 'none';
+  chTab(0); // force host panel
+  if (!mpPeer || mpPeer.destroyed) initHost();
+}
 function closeCh() { document.getElementById('ch-ov').classList.remove('show'); }
 
 function chTab(idx) {
@@ -1551,7 +1555,12 @@ function mpFallbackShare(body) {
   const j = p.get('join');
   if (j) {
     setTimeout(() => {
-      openCh();
+      // Receiver flow: show overlay, hide tabs, jump straight to join panel
+      document.getElementById('ch-ov').classList.add('show');
+      document.querySelector('.ch-tabs').style.display = 'none';
+      // Update modal title for receiver
+      document.querySelector('.ch-card-title').textContent = 'Accept Challenge';
+      document.querySelector('.ch-card-sub').textContent = 'Your friend is waiting. Enter the code to join.';
       chTab(1);
       const inp = document.getElementById('ch-inp');
       if (inp) inp.value = j.toUpperCase().slice(0,6);
