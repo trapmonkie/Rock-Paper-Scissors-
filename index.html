@@ -1,62 +1,332 @@
-<style>
-  /* SVG Styles for Offline Mode */
-  .obj svg {
-    height: clamp(100px, 25vw, 150px);
-    width: auto;
-    fill: var(--text);
-    display: none; /* Hidden by default */
-    animation: float 4s ease-in-out infinite;
-  }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Rock · Paper · Scissors</title>
   
-  body.is-offline .obj img { display: none; }
-  body.is-offline .obj svg { display: block; }
+  <link rel="preload" href="images/white-rock-rps.PNG" as="image">
+  <link rel="preload" href="images/white-paper-rps.PNG" as="image">
+  <link rel="preload" href="images/white-scissors-rps.PNG" as="image">
+  <link rel="preload" href="images/black-rock-rps.PNG" as="image">
+  <link rel="preload" href="images/black-paper-rps.PNG" as="image">
+  <link rel="preload" href="images/black-scissors-rps.PNG" as="image">
 
-  .net-dot.offline { 
-    background: #e0506a; 
-    box-shadow: 0 0 10px rgba(224, 80, 106, 0.6); 
-  }
-</style>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 
-<div class="stage">
-  <div class="obj" id="o-rock" onclick="pick('rock')">
-    <img id="i-rock" src="images/white-rock-rps.PNG">
-    <svg viewBox="0 0 24 24" class="svg-icon"><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,18c-3.31,0-6-2.69-6-6s2.69-6,6-6s6,2.69,6,6 S15.31,18,12,18z"/></svg>
-    <div class="obj-lbl">Rock</div>
-  </div>
-  <div class="obj" id="o-paper" onclick="pick('paper')">
-    <img id="i-paper" src="images/white-paper-rps.PNG">
-    <svg viewBox="0 0 24 24" class="svg-icon"><path d="M14,2H6C4.9,2,4,2.9,4,4v16c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V8L14,2z M13,9V3.5L18.5,9H13z"/></svg>
-    <div class="obj-lbl">Paper</div>
-  </div>
-  <div class="obj" id="o-scissors" onclick="pick('scissors')">
-    <img id="i-scissors" src="images/white-scissors-rps.PNG">
-    <svg viewBox="0 0 24 24" class="svg-icon"><path d="M19.3,13.8c-0.2-0.2-0.5-0.3-0.8-0.3l-2.5,0.4l-2.5-4.3c0.3-0.3,0.5-0.7,0.5-1.1c0-0.8-0.7-1.5-1.5-1.5 S11,7.7,11,8.5c0,0.4,0.2,0.8,0.5,1.1l-2.5,4.3l-2.5-0.4c-0.3,0-0.6,0.1-0.8,0.3c-0.5,0.5-0.5,1.2,0,1.7l3,3c0.2,0.2,0.5,0.3,0.8,0.3 l2.5-0.4l2.5,4.3c-0.3,0.3-0.5,0.7-0.5,1.1c0,0.8,0.7,1.5,1.5,1.5s1.5-0.7,1.5-1.5c0-0.4-0.2-0.8-0.5-1.1l2.5-4.3l2.5,0.4 c0.3,0,0.6-0.1,0.8-0.3C19.8,15,19.8,14.3,19.3,13.8z"/></svg>
-    <div class="obj-lbl">Scissors</div>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0eeeb; --text: #111; --muted: rgba(0,0,0,0.28); --border: rgba(0,0,0,0.08);
+      --surface: rgba(255,255,255,0.7); --btn: #111; --btn-fg: #f0eeeb;
+      --win: #1a7a42; --lose: #b52038; --tie: #666; --tr: 0.34s cubic-bezier(0.4,0,0.2,1);
+    }
+    [data-theme=dark] {
+      --bg: #0c0c0c; --text: #f0eeeb; --muted: rgba(240,238,235,0.28); --border: rgba(240,238,235,0.08);
+      --surface: rgba(24,24,24,0.88); --btn: #f0eeeb; --btn-fg: #0c0c0c;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text);
+      height: 100dvh; display: flex; flex-direction: column; align-items: center;
+      max-width: 430px; margin: 0 auto; overflow: hidden; position: relative;
+      transition: background var(--tr), color var(--tr);
+      padding-top: env(safe-area-inset-top, 0);
+    }
+
+    /* Header & Network Indicator */
+    .hdr { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
+    .hdr-title { font-size: 0.56rem; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); }
+    .hdr-right { display: flex; align-items: center; gap: 12px; }
+    .net-status { display: flex; align-items: center; gap: 6px; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .net-dot { width: 8px; height: 8px; border-radius: 50%; background: #50c87c; transition: background 0.3s; }
+    .net-dot.offline { background: #e0506a; box-shadow: 0 0 8px rgba(224, 80, 106, 0.4); }
+
+    /* Score & Dots */
+    .score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+    .score-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 50px; padding: 6px 16px; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(12px); }
+    .sn { font-size: 1rem; font-weight: 600; min-width: 14px; text-align: center; }
+    
+    .bf5 { display: flex; gap: 8px; margin-top: 15px; }
+    .bf5-dot { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--border); transition: all 0.4s; }
+    .bf5-dot.p1 { background: var(--text); border-color: var(--text); transform: scale(1.2); }
+    .bf5-dot.p2 { background: var(--lose); border-color: var(--lose); transform: scale(1.2); }
+    .bf5-dot.tie { background: var(--tie); border-color: var(--tie); }
+
+    /* Stage */
+    .stage-wrap { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+    .stage { width: 100%; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 30px; }
+    .obj { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.4s ease; -webkit-tap-highlight-color: transparent; }
+    .obj img { height: clamp(140px, 34vw, 200px); width: auto; pointer-events: none; animation: float 4s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .obj.selected { transform: translateY(-12px) scale(1.06); }
+    .obj.dimmed { opacity: 0.1; transform: scale(0.85); pointer-events: none; }
+    
+    /* Play Row */
+    .play-row { padding: 10px 20px 20px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .pbtn { background: var(--btn); color: var(--btn-fg); border: none; border-radius: 50px; padding: 15px; width: 100%; font-family: 'Outfit'; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: transform 0.2s; }
+    .pbtn:disabled { opacity: 0.2; cursor: not-allowed; }
+    .chal-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; padding: 10px; font-family: 'Outfit'; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.3s; }
+    .chal-btn.accepted { color: var(--win); border-color: var(--win); opacity: 0.8; pointer-events: none; }
+
+    /* History */
+    .history { width: 100%; padding: 0 20px 20px; }
+    .hlbl { font-size: 0.5rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .hitem { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 9px 15px; display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--muted); margin-bottom: 4px; }
+
+    /* Result Overlay */
+    .win-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: 0.4s; background: rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
+    .win-overlay.show { opacity: 1; pointer-events: all; }
+    .win-card { background: var(--surface); padding: 40px; border-radius: 30px; text-align: center; width: 85%; max-width: 300px; border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0,0,0,0.1); }
+    
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 99; }
+  </style>
+</head>
+<body>
+
+<canvas id="confetti"></canvas>
+
+<div class="hdr">
+  <span class="hdr-title">RPS</span>
+  <div class="hdr-right">
+    <div class="net-status">
+      <div class="net-dot" id="net-dot"></div>
+      <span id="net-lbl">Online</span>
+    </div>
+    <div style="cursor:pointer; opacity:0.6" onclick="toggleTheme()">🌓</div>
   </div>
 </div>
 
-<script>
-  function updateNet() {
-    const on = navigator.onLine;
-    const dot = document.getElementById('net-dot');
-    const lbl = document.getElementById('net-lbl');
-    const body = document.body;
+<div class="score-wrap">
+  <div class="score-pill"><span>You</span><span class="sn" id="s1">0</span></div>
+  <div class="score-pill"><span class="sn" id="s2">0</span><span id="p2lbl">CPU</span></div>
+</div>
 
-    if (on) {
-      dot.className = 'net-dot';
-      lbl.innerText = 'Online';
-      body.classList.remove('is-offline');
+<div class="bf5" id="bf5">
+  <div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage">
+    <div class="obj" id="o-rock" onclick="pick('rock')">
+      <img id="i-rock" src="images/white-rock-rps.PNG">
+    </div>
+    <div class="obj" id="o-paper" onclick="pick('paper')">
+      <img id="i-paper" src="images/white-paper-rps.PNG">
+    </div>
+    <div class="obj" id="o-scissors" onclick="pick('scissors')">
+      <img id="i-scissors" src="images/white-scissors-rps.PNG">
+    </div>
+  </div>
+</div>
+
+<div class="play-row">
+  <button class="pbtn" id="pbtn" onclick="playRound()" disabled>Play</button>
+  <button class="chal-btn" id="chal-btn" onclick="initChallenge()">Challenge a Friend</button>
+</div>
+
+<div class="history">
+  <div class="hlbl">Recent</div>
+  <div id="hlist"></div>
+</div>
+
+<div class="win-overlay" id="win-ov">
+  <div class="win-card">
+    <h2 id="win-title" style="letter-spacing:1px; text-transform:uppercase; font-size:1rem; font-weight:600;">Result</h2>
+    <button class="pbtn" style="margin-top:25px; padding: 12px;" onclick="resetRound()">Next Round</button>
+  </div>
+</div>
+
+<audio id="bgm" src="Chrono_Echoes_rockpaperscissors.mp3" loop></audio>
+
+<script>
+  let myScore=0, oppScore=0, roundIndex=0, myMove=null, oppMove=null, peer, conn, isMP=false;
+  const bgm = document.getElementById('bgm');
+  bgm.volume = 0.22;
+
+  // 1. Peer Connection Resilience
+  function setupPeer() {
+    peer = new Peer();
+    peer.on('open', id => {
+      const joinId = new URLSearchParams(window.location.search).get('g');
+      if(joinId) connectToPeer(joinId);
+    });
+    peer.on('connection', c => {
+      conn = c;
+      setupConnection();
+    });
+    peer.on('error', err => {
+      console.error(err);
+      handleDisconnect();
+    });
+  }
+
+  function connectToPeer(id) {
+    conn = peer.connect(id);
+    setupConnection();
+  }
+
+  function setupConnection() {
+    isMP = true;
+    document.getElementById('p2lbl').innerText = "P2";
+    const btn = document.getElementById('chal-btn');
+    btn.innerText = "Challenge Accepted";
+    btn.classList.add('accepted');
+    btn.disabled = true;
+
+    conn.on('data', data => {
+      if(data.type === 'MOVE') {
+        oppMove = data.move;
+        if(myMove) resolve();
+      }
+    });
+
+    conn.on('close', handleDisconnect);
+  }
+
+  function handleDisconnect() {
+    isMP = false;
+    if(conn) conn.close();
+    document.getElementById('p2lbl').innerText = "CPU";
+    document.getElementById('chal-btn').innerText = "Challenge a Friend";
+    document.getElementById('chal-btn').classList.remove('accepted');
+    document.getElementById('chal-btn').disabled = false;
+    // Clear Score on disconnect
+    myScore = 0; oppScore = 0; roundIndex = 0;
+    updateUI();
+    const dots = document.querySelectorAll('.bf5-dot');
+    dots.forEach(d => d.className = 'bf5-dot');
+  }
+
+  // 2. Gameplay Logic
+  function pick(m) {
+    myMove = m;
+    if(bgm.paused) bgm.play();
+    document.querySelectorAll('.obj').forEach(o => o.classList.add('dimmed'));
+    document.getElementById(`o-${m}`).classList.remove('dimmed');
+    document.getElementById(`o-${m}`).classList.add('selected');
+    document.getElementById('pbtn').disabled = false;
+  }
+
+  function playRound() {
+    if(isMP) {
+      conn.send({type: 'MOVE', move: myMove});
+      if(oppMove) resolve();
+      else document.getElementById('pbtn').innerText = "Waiting...";
     } else {
-      dot.className = 'net-dot offline';
-      lbl.innerText = 'Offline';
-      body.classList.add('is-offline'); // Swaps PNGs for SVGs via CSS
+      oppMove = ['rock', 'paper', 'scissors'][Math.floor(Math.random()*3)];
+      resolve();
     }
   }
 
-  // Listen for browser network events
-  window.addEventListener('online', updateNet);
-  window.addEventListener('offline', updateNet);
-  
-  // Initial check on load
-  updateNet();
+  function resolve() {
+    let res = 'tie';
+    if((myMove==='rock'&&oppMove==='scissors')||(myMove==='paper'&&oppMove==='rock')||(myMove==='scissors'&&oppMove==='paper')) {
+      res = 'win'; myScore++;
+    } else if(myMove !== oppMove) {
+      res = 'lose'; oppScore++;
+    }
+
+    // Update 5-dot round indicator
+    const dots = document.querySelectorAll('.bf5-dot');
+    if(roundIndex < 5) {
+      dots[roundIndex].classList.add(res === 'win' ? 'p1' : (res === 'lose' ? 'p2' : 'tie'));
+      roundIndex++;
+    }
+
+    showResult(res);
+  }
+
+  function showResult(res) {
+    updateUI();
+    document.getElementById('win-title').innerText = res === 'win' ? 'You Won' : (res === 'lose' ? 'Opponent Won' : 'Tie');
+    document.getElementById('win-ov').classList.add('show');
+    if(res === 'win') launchConfetti();
+    saveHistory(res, myMove, oppMove);
+  }
+
+  function updateUI() {
+    document.getElementById('s1').innerText = myScore;
+    document.getElementById('s2').innerText = oppScore;
+  }
+
+  function resetRound() {
+    myMove = null; oppMove = null;
+    document.getElementById('win-ov').classList.remove('show');
+    document.querySelectorAll('.obj').forEach(o => o.classList.remove('dimmed', 'selected'));
+    document.getElementById('pbtn').disabled = true;
+    document.getElementById('pbtn').innerText = "Play";
+  }
+
+  // 3. Helpers
+  function toggleTheme() {
+    const root = document.documentElement;
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    const color = isDark ? 'white' : 'black';
+    ['rock','paper','scissors'].forEach(k => {
+      document.getElementById(`i-${k}`).src = `images/${color}-${k}-rps.PNG`;
+    });
+  }
+
+  function updateNet() {
+    const on = navigator.onLine;
+    document.getElementById('net-dot').className = on ? 'net-dot' : 'net-dot offline';
+    document.getElementById('net-lbl').innerText = on ? 'Online' : 'Offline';
+  }
+
+  function initChallenge() {
+    const link = `${window.location.origin}${window.location.pathname}?g=${peer.id}`;
+    if(navigator.share) navigator.share({ text: `Play RPS with me: ${link}` });
+    else prompt("Copy this link to invite a friend:", link);
+  }
+
+  function saveHistory(res, m1, m2) {
+    let h = JSON.parse(localStorage.getItem('rps_h') || '[]');
+    h.unshift({res, m1, m2});
+    localStorage.setItem('rps_h', JSON.stringify(h.slice(0,5)));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('hlist');
+    const h = JSON.parse(localStorage.getItem('rps_h') || '[]');
+    list.innerHTML = h.map(i => `
+      <div class="hitem">
+        <span style="text-transform: capitalize;">${i.m1} • ${i.m2}</span>
+        <span style="color:var(--${i.res}); font-weight:600;">${i.res.toUpperCase()}</span>
+      </div>
+    `).join('');
+  }
+
+  function launchConfetti() {
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    let particles = Array.from({length: 40}, () => ({
+      x: Math.random() * canvas.width, y: -20,
+      size: Math.random() * 4 + 2, speed: Math.random() * 3 + 3,
+      color: `hsla(${Math.random() * 360}, 60%, 50%, 0.8)`, drift: Math.random() * 2 - 1
+    }));
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.y += p.speed; p.x += p.drift;
+        ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+      });
+      if (particles.some(p => p.y < canvas.height)) requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  window.onload = () => {
+    setupPeer();
+    updateNet();
+    renderHistory();
+    window.addEventListener('online', updateNet);
+    window.addEventListener('offline', updateNet);
+  };
 </script>
+</body>
+</html>
