@@ -31,14 +31,14 @@
       padding-top: env(safe-area-inset-top, 0);
     }
 
-    /* Header */
+    /* Header & Network */
     .hdr { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
     .hdr-title { font-size: 0.56rem; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); }
     .net-status { display: flex; align-items: center; gap: 6px; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
     .net-dot { width: 8px; height: 8px; border-radius: 50%; background: #50c87c; transition: 0.3s; }
     .net-dot.offline { background: #e0506a; box-shadow: 0 0 10px rgba(224, 80, 106, 0.5); }
 
-    /* Score & Round Dots */
+    /* Score & Dots */
     .score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
     .score-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 50px; padding: 6px 16px; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(12px); }
     .sn { font-size: 1rem; font-weight: 600; min-width: 14px; text-align: center; }
@@ -47,13 +47,12 @@
     .bf5-dot { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--border); transition: 0.4s; }
     .bf5-dot.p1 { background: var(--text); border-color: var(--text); transform: scale(1.2); }
     .bf5-dot.p2 { background: var(--lose); border-color: var(--lose); transform: scale(1.2); }
-    .bf5-dot.tie { background: var(--tie); border-color: var(--tie); }
 
-    /* Stage Asset Logic */
+    /* Stage Asset Logic (PNG vs SVG) */
     .stage-wrap { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; }
-    .stage { width: 100%; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 20px; }
+    .stage { width: 100%; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 30px; }
     .obj { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.4s; }
-    .obj img { height: clamp(130px, 32vw, 180px); width: auto; animation: float 4s ease-in-out infinite; }
+    .obj img { height: clamp(140px, 34vw, 200px); width: auto; animation: float 4s ease-in-out infinite; }
     .obj svg { height: 80px; width: 80px; fill: var(--text); display: none; animation: float 4s ease-in-out infinite; }
     
     body.is-offline .obj img { display: none; }
@@ -62,22 +61,12 @@
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     .obj.dimmed { opacity: 0.1; transform: scale(0.85); pointer-events: none; }
     
-    /* Play Controls */
-    .play-row { padding: 5px 20px 10px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    /* Controls */
+    .play-row { padding: 10px 20px 20px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
     .pbtn { background: var(--btn); color: var(--btn-fg); border: none; border-radius: 50px; padding: 15px; width: 100%; font-family: 'Outfit'; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; }
     .pbtn:disabled { opacity: 0.2; }
     .chal-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; padding: 10px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
     .chal-btn.accepted { color: var(--win); border-color: var(--win); pointer-events: none; }
-
-    /* Recent History Section */
-    .history { width: 100%; padding: 10px 20px 20px; display: flex; flex-direction: column; }
-    .hlbl { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-    .hlist { display: flex; flex-direction: column; gap: 4px; }
-    .hitem { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 7px 12px; display: flex; justify-content: space-between; font-size: 0.64rem; color: var(--muted); }
-    .hres.win { color: var(--win); font-weight: 500; }
-    .hres.lose { color: var(--lose); font-weight: 500; }
-    .hres.tie { color: var(--tie); font-weight: 500; }
-    .sdot { margin: 0 4px; opacity: 0.5; }
 
     /* Result Overlay */
     .win-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: 0.4s; background: rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
@@ -96,7 +85,7 @@
   <div class="net-status">
     <div class="net-dot" id="net-dot"></div>
     <span id="net-lbl">Online</span>
-    <div style="cursor:pointer; margin-left:12px; font-size: 0.9rem;" onclick="toggleTheme()">🌓</div>
+    <div style="cursor:pointer; margin-left:12px;" onclick="toggleTheme()">🌓</div>
   </div>
 </div>
 
@@ -131,14 +120,9 @@
   <button class="chal-btn" id="chal-btn" onclick="initChallenge()">Challenge a Friend</button>
 </div>
 
-<div class="history">
-  <div class="hlbl">Recent</div>
-  <div class="hlist" id="hlist"></div>
-</div>
-
 <div class="win-overlay" id="win-ov">
   <div class="win-card">
-    <h2 id="win-title" style="text-transform:uppercase; font-size:1rem; letter-spacing: 1px;">Result</h2>
+    <h2 id="win-title" style="text-transform:uppercase; font-size:1rem;">Result</h2>
     <button class="pbtn" style="margin-top:25px;" onclick="resetRound()">Continue</button>
   </div>
 </div>
@@ -150,7 +134,7 @@
   const bgm = document.getElementById('bgm');
   bgm.volume = 0.22;
 
-  // 1. Network & UI State
+  // 1. Network & Theme Logic
   function updateNet() {
     const on = navigator.onLine;
     document.getElementById('net-dot').className = on ? 'net-dot' : 'net-dot offline';
@@ -164,12 +148,11 @@
     root.setAttribute('data-theme', isDark ? 'light' : 'dark');
     const color = isDark ? 'white' : 'black';
     ['rock','paper','scissors'].forEach(k => {
-      const el = document.getElementById(`i-${k}`);
-      if(el) el.src = `images/${color}-${k}-rps.PNG`;
+      document.getElementById(`i-${k}`).src = `images/${color}-${k}-rps.PNG`;
     });
   }
 
-  // 2. Peer & SMS Challenge
+  // 2. Peer/Multiplayer Resilience
   function setupPeer() {
     peer = new Peer();
     peer.on('open', id => {
@@ -178,18 +161,6 @@
     });
     peer.on('connection', c => { conn = c; setupConnection(); });
     peer.on('error', handleDisconnect);
-  }
-
-  function initChallenge() {
-    const link = `${window.location.origin}${window.location.pathname}?g=${peer.id}`;
-    const msg = `Play RPS with me: ${link}`;
-    if (navigator.share) {
-      navigator.share({ text: msg }).catch(() => {
-        window.location.href = `sms:?&body=${encodeURIComponent(msg)}`;
-      });
-    } else {
-      window.location.href = `sms:?&body=${encodeURIComponent(msg)}`;
-    }
   }
 
   function setupConnection() {
@@ -207,12 +178,11 @@
   function handleDisconnect() {
     isMP = false;
     document.getElementById('p2lbl').innerText = "CPU";
-    const btn = document.getElementById('chal-btn');
-    btn.innerText = "Challenge a Friend";
-    btn.classList.remove('accepted');
+    document.getElementById('chal-btn').innerText = "Challenge a Friend";
+    document.getElementById('chal-btn').classList.remove('accepted');
   }
 
-  // 3. Gameplay Logic
+  // 3. Game Logic
   function pick(m) {
     myMove = m;
     if(bgm.paused) bgm.play();
@@ -240,32 +210,17 @@
       res = 'lose'; oppScore++;
     }
 
-    // Update Dots
     const dots = document.querySelectorAll('.bf5-dot');
     if(roundIndex < 5) {
       dots[roundIndex].classList.add(res === 'win' ? 'p1' : (res === 'lose' ? 'p2' : 'tie'));
       roundIndex++;
     }
 
-    updateHistory(res, myMove, oppMove);
     document.getElementById('s1').innerText = myScore;
     document.getElementById('s2').innerText = oppScore;
-    document.getElementById('win-title').innerText = res === 'win' ? 'YOU WON' : (res === 'lose' ? 'P2 WON' : 'TIE');
+    document.getElementById('win-title').innerText = res.toUpperCase();
     document.getElementById('win-ov').classList.add('show');
     if(res === 'win') launchConfetti();
-  }
-
-  function updateHistory(res, m1, m2) {
-    const hlist = document.getElementById('hlist');
-    const div = document.createElement('div');
-    div.className = 'hitem';
-    const label = res === 'win' ? 'You Won' : (res === 'lose' ? 'P2 Won' : 'Tie');
-    div.innerHTML = `
-      <span class="hmoves" style="text-transform:capitalize;">${m1} <span class="sdot">•</span> ${m2}</span>
-      <span class="hres ${res}">${label}</span>
-    `;
-    hlist.prepend(div);
-    if (hlist.children.length > 5) hlist.removeChild(hlist.lastChild);
   }
 
   function resetRound() {
@@ -274,6 +229,12 @@
     document.querySelectorAll('.obj').forEach(o => o.classList.remove('dimmed'));
     document.getElementById('pbtn').disabled = true;
     document.getElementById('pbtn').innerText = "Play";
+  }
+
+  function initChallenge() {
+    const link = `${window.location.origin}${window.location.pathname}?g=${peer.id}`;
+    if(navigator.share) navigator.share({ text: `Play RPS with me: ${link}` });
+    else prompt("Invite Link:", link);
   }
 
   function launchConfetti() {
