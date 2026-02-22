@@ -1,277 +1,267 @@
-<!-- Keep your existing HTML and image tags from v11 -->
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rock Paper Scissors</title>
 
-<!-- Win / Lose icon container -->
-<div id="resultIcon" class="result-icon"></div>
+<style>
+:root{
+  --bg:#ffffff;
+  --text:#111;
+  --card:#f3f3f3;
+  --accent:#111;
+  --win:#16a34a;
+  --lose:#dc2626;
+}
 
-<!-- Existing buttons; DO NOT change their IDs or structure -->
-<button id="rockBtn">Rock</button>
-<button id="paperBtn">Paper</button>
-<button id="scissorsBtn">Scissors</button>
+[data-theme="dark"]{
+  --bg:#0f172a;
+  --text:#fff;
+  --card:#1e293b;
+  --accent:#fff;
+}
 
-<button id="twoPlayerBtn">2 Players</button>
-<button id="cpuBtn">vs CPU</button>
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  justify-content:center;
+}
 
-<button id="challengeButton">Challenge a Friend</button>
+.container{
+  width:100%;
+  max-width:430px;
+  padding:20px;
+}
 
-<!-- PeerJS (unpkg, safer for Vercel) -->
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+button{
+  border:none;
+  padding:10px 14px;
+  border-radius:10px;
+  background:var(--card);
+  color:var(--text);
+  cursor:pointer;
+}
+
+.scoreboard{
+  display:flex;
+  justify-content:space-between;
+  margin:20px 0;
+}
+
+.score{
+  background:var(--card);
+  padding:10px 16px;
+  border-radius:12px;
+  font-weight:bold;
+}
+
+.stage{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.choice{
+  flex:1;
+  background:var(--card);
+  border-radius:16px;
+  padding:10px;
+  text-align:center;
+  cursor:pointer;
+  transition:.2s;
+}
+
+.choice:hover{
+  transform:translateY(-5px);
+}
+
+.choice img{
+  width:100%;
+  max-width:100px;
+}
+
+.history{
+  margin-top:20px;
+}
+
+.history-item{
+  font-size:14px;
+  padding:6px 0;
+  border-bottom:1px solid #ccc3;
+}
+
+.overlay{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0008;
+  opacity:0;
+  pointer-events:none;
+  transition:.3s;
+}
+
+.overlay.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.result-box{
+  background:var(--bg);
+  padding:30px;
+  border-radius:16px;
+  text-align:center;
+}
+
+.result-win{color:var(--win);}
+.result-lose{color:var(--lose);}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+<h2>Rock Paper Scissors</h2>
+<div>
+<button onclick="toggleTheme()">🌗</button>
+<button onclick="toggleMute()" id="muteBtn">🔊</button>
+</div>
+</header>
+
+<div class="scoreboard">
+<div class="score">You: <span id="p1">0</span></div>
+<div class="score">CPU: <span id="p2">0</span></div>
+</div>
+
+<div class="stage">
+<div class="choice" onclick="play('rock')">
+<img id="rockImg">
+<div>Rock</div>
+</div>
+
+<div class="choice" onclick="play('paper')">
+<img id="paperImg">
+<div>Paper</div>
+</div>
+
+<div class="choice" onclick="play('scissors')">
+<img id="scissorsImg">
+<div>Scissors</div>
+</div>
+</div>
+
+<div class="history" id="history"></div>
+
+</div>
+
+<div class="overlay" id="overlay">
+<div class="result-box">
+<h2 id="resultText"></h2>
+<button onclick="closeOverlay()">Continue</button>
+</div>
+</div>
+
+<!-- SOUNDTRACK -->
+<audio id="bgm" loop>
+<source src="Chrono_Echoes_rockpaperscissors.mp3" type="audio/mpeg">
+</audio>
 
 <script>
-  // --- Minimal v12 integration on top of v11 ---
+let score={p1:0,p2:0};
+let muted=false;
 
-  // 1) Win / Lose icon rendering with SVG (replacing emoji)
-  const resultIconEl = document.getElementById('resultIcon');
+const choices=["rock","paper","scissors"];
 
-  function renderResultIcon(result) {
-    // result: 'win' | 'lose' | 'tie'
-    if (!resultIconEl) return;
+function loadImages(){
+  const theme=document.documentElement.dataset.theme==="dark"?"black":"white";
+  document.getElementById("rockImg").src=`${theme}-rock-rps.PNG`;
+  document.getElementById("paperImg").src=`${theme}-paper-rps.PNG`;
+  document.getElementById("scissorsImg").src=`${theme}-scissors-rps.PNG`;
+}
 
-    const color = getComputedStyle(document.documentElement)
-      .getPropertyValue('--text-color') || '#ffffff';
+loadImages();
 
-    if (result === 'win') {
-      resultIconEl.innerHTML = `
-        <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" fill="none" stroke="${color}" stroke-width="1.6" />
-          <path d="M9 13.5l1.8 1.8L15 11" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M8 17h8" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" />
-        </svg>
-      `;
-    } else if (result === 'lose') {
-      resultIconEl.innerHTML = `
-        <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" fill="none" stroke="${color}" stroke-width="1.6" />
-          <circle cx="12" cy="12" r="4.8" fill="none" stroke="${color}" stroke-width="1.6" />
-          <circle cx="12" cy="12" r="1.2" fill="${color}" />
-        </svg>
-      `;
-    } else {
-      resultIconEl.innerHTML = '';
-    }
-  }
+function toggleTheme(){
+  const root=document.documentElement;
+  root.dataset.theme=root.dataset.theme==="dark"?"light":"dark";
+  loadImages();
+}
 
-  // 2) Lightweight confetti (editorial style)
-  function launchConfetti() {
-    const confettiContainer = document.createElement('div');
-    confettiContainer.style.position = 'fixed';
-    confettiContainer.style.left = '0';
-    confettiContainer.style.top = '0';
-    confettiContainer.style.width = '100%';
-    confettiContainer.style.height = '100%';
-    confettiContainer.style.pointerEvents = 'none';
-    confettiContainer.style.overflow = 'hidden';
-    confettiContainer.style.zIndex = '9999';
-    document.body.appendChild(confettiContainer);
+function toggleMute(){
+  const bgm=document.getElementById("bgm");
+  muted=!muted;
+  document.getElementById("muteBtn").textContent=muted?"🔇":"🔊";
+  if(muted) bgm.pause();
+  else bgm.play().catch(()=>{});
+}
 
-    const color = getComputedStyle(document.documentElement)
-      .getPropertyValue('--text-color') || '#ffffff';
-    const count = 28;
+document.body.addEventListener("click",()=>{
+  if(!muted) document.getElementById("bgm").play().catch(()=>{});
+},{once:true});
 
-    for (let i = 0; i < count; i++) {
-      const bar = document.createElement('div');
-      bar.style.position = 'absolute';
-      bar.style.width = '2px';
-      bar.style.height = `${40 + Math.random() * 40}px`;
-      bar.style.left = `${Math.random() * 100}%`;
-      bar.style.top = `-80px`;
-      bar.style.backgroundColor = color.trim() || '#ffffff';
-      bar.style.opacity = '0.9';
-      bar.style.transform = `translate3d(0, 0, 0)`;
-      bar.style.transition = 'transform 3.8s ease-out, opacity 3.8s ease-out';
-      confettiContainer.appendChild(bar);
+function play(user){
+  const cpu=choices[Math.floor(Math.random()*3)];
+  const result=getWinner(user,cpu);
 
-      // trigger layout
-      void bar.offsetHeight;
+  if(result==="win") score.p1++;
+  if(result==="lose") score.p2++;
 
-      const translateY = window.innerHeight + 120;
-      const driftX = (Math.random() - 0.5) * 60;
+  updateScore();
+  updateHistory(user,cpu,result);
+  showResult(result,user,cpu);
+}
 
-      bar.style.transform = `translate3d(${driftX}px, ${translateY}px, 0)`;
-      bar.style.opacity = '0';
-    }
+function getWinner(a,b){
+  if(a===b) return "draw";
+  if(
+    (a==="rock"&&b==="scissors")||
+    (a==="paper"&&b==="rock")||
+    (a==="scissors"&&b==="paper")
+  ) return "win";
+  return "lose";
+}
 
-    setTimeout(() => {
-      if (confettiContainer.parentNode) {
-        confettiContainer.parentNode.removeChild(confettiContainer);
-      }
-    }, 4000);
-  }
+function updateScore(){
+  document.getElementById("p1").textContent=score.p1;
+  document.getElementById("p2").textContent=score.p2;
+}
 
-  // Example hook: call renderResultIcon + confetti from your existing game logic
-  // Integrate this into your v11 "end round" logic:
-  function onRoundFinished(result) {
-    // result: 'win' | 'lose' | 'tie'
-    renderResultIcon(result);
-    if (result === 'win') {
-      launchConfetti();
-    }
-  }
+function updateHistory(u,c,r){
+  const el=document.createElement("div");
+  el.className="history-item";
+  el.textContent=`You: ${u} | CPU: ${c} → ${r}`;
+  const list=document.getElementById("history");
+  list.prepend(el);
+  if(list.children.length>5) list.removeChild(list.lastChild);
+}
 
-  // 3) Challenge-a-Friend (PeerJS auto-link flow)
-  const challengeBtn = document.getElementById('challengeButton');
-  const opponentLabel = document.getElementById('opponentLabel'); // optional if you have one
-  let peer = null;
-  let conn = null;
-  let isHost = false;
+function showResult(r,u,c){
+  const text=document.getElementById("resultText");
+  text.className="";
+  if(r==="win"){text.textContent="You Win!";text.classList.add("result-win");}
+  else if(r==="lose"){text.textContent="You Lose";text.classList.add("result-lose");}
+  else{text.textContent="Draw";}
+  document.getElementById("overlay").classList.add("show");
+}
 
-  function isOnline() {
-    return navigator.onLine;
-  }
-
-  function updateChallengeButtonState() {
-    if (!challengeBtn) return;
-    if (isOnline()) {
-      challengeBtn.disabled = false;
-      challengeBtn.style.opacity = '1';
-    } else {
-      challengeBtn.disabled = true;
-      challengeBtn.style.opacity = '0.35';
-    }
-  }
-
-  window.addEventListener('online', updateChallengeButtonState);
-  window.addEventListener('offline', updateChallengeButtonState);
-  updateChallengeButtonState();
-
-  function initializePeerIfNeeded() {
-    if (peer) return;
-
-    peer = new Peer(undefined, {
-      debug: 1
-    });
-
-    peer.on('open', (id) => {
-      const url = new URL(window.location.href);
-      const code = id;
-      url.searchParams.set('code', code);
-      if (isHost) {
-        const shareUrl = url.toString();
-        // Use native share if available, otherwise fallback to prompt
-        if (navigator.share) {
-          navigator.share({
-            title: 'Rock Paper Scissors',
-            text: 'Tap to play Rock Paper Scissors with me!',
-            url: shareUrl
-          }).catch(() => {});
-        } else {
-          window.prompt('Send this link to your friend:', shareUrl);
-        }
-      }
-    });
-
-    peer.on('connection', (c) => {
-      conn = c;
-      setupConnectionHandlers();
-      onFriendConnected();
-    });
-
-    peer.on('error', (err) => {
-      console.error(err);
-      if (challengeBtn) {
-        challengeBtn.textContent = 'Challenge a Friend';
-      }
-    });
-  }
-
-  function setupConnectionHandlers() {
-    if (!conn) return;
-    conn.on('data', (data) => {
-      // Handle messages from friend here (moves, resets, etc.)
-      // You can map this onto your v11 "2 Player" logic.
-      handleIncomingMessage(data);
-    });
-
-    conn.on('close', () => {
-      conn = null;
-      onFriendDisconnected();
-    });
-  }
-
-  function onFriendConnected() {
-    if (opponentLabel) {
-      opponentLabel.textContent = 'Friend';
-    }
-    // Reset scores, etc. Hook into your existing reset logic:
-    resetGameForMultiplayer();
-    if (challengeBtn) {
-      challengeBtn.textContent = 'Connected';
-    }
-  }
-
-  function onFriendDisconnected() {
-    if (opponentLabel) {
-      opponentLabel.textContent = 'CPU';
-    }
-    if (challengeBtn) {
-      challengeBtn.textContent = 'Challenge a Friend';
-    }
-  }
-
-  function handleIncomingMessage(data) {
-    // { type: 'move', value: 'rock' } etc.
-    // Integrate with your existing v11 move handling.
-    // Example:
-    if (data.type === 'move') {
-      applyRemoteMove(data.value);
-    } else if (data.type === 'reset') {
-      resetGameForMultiplayer();
-    }
-  }
-
-  function sendMessage(msg) {
-    if (conn && conn.open) {
-      conn.send(msg);
-    }
-  }
-
-  // Hook these sendMessage calls into your existing v11 UI:
-  // e.g. when local player picks a move in Friend mode, call:
-  // sendMessage({ type: 'move', value: 'rock' });
-
-  // Host flow
-  if (challengeBtn) {
-    challengeBtn.addEventListener('click', () => {
-      if (!isOnline()) return;
-      isHost = true;
-      challengeBtn.disabled = true;
-      challengeBtn.textContent = 'Send Challenge via Text…';
-      initializePeerIfNeeded();
-    });
-  }
-
-  // Receiver flow
-  const url = new URL(window.location.href);
-  const incomingCode = url.searchParams.get('code');
-  if (incomingCode) {
-    // Receiver: auto-connect
-    isHost = false;
-    initializePeerIfNeeded();
-    const waitForPeer = setInterval(() => {
-      if (peer && peer.open) {
-        clearInterval(waitForPeer);
-        if (challengeBtn) {
-          challengeBtn.textContent = 'Connecting…';
-          challengeBtn.disabled = true;
-        }
-        conn = peer.connect(incomingCode);
-        setupConnectionHandlers();
-        conn.on('open', () => {
-          onFriendConnected();
-        });
-      }
-    }, 100);
-  }
-
-  // 4) Stubs to connect to your existing v11 logic
-  function resetGameForMultiplayer() {
-    // Call your existing reset logic here.
-    // Example:
-    // resetScores();
-    // resetUI();
-  }
-
-  function applyRemoteMove(move) {
-    // Map friend move into your existing v11 "2 Players" logic.
-    // Example: handleSecondPlayerMove(move);
-  }
+function closeOverlay(){
+  document.getElementById("overlay").classList.remove("show");
+}
 </script>
+
+</body>
+</html>
