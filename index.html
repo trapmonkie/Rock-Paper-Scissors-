@@ -1,267 +1,311 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rock Paper Scissors</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Rock · Paper · Scissors</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#ffffff;
-  --text:#111;
-  --card:#f3f3f3;
-  --accent:#111;
-  --win:#16a34a;
-  --lose:#dc2626;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f0eeeb;
+  --text: #111;
+  --muted: rgba(0,0,0,0.28);
+  --border: rgba(0,0,0,0.08);
+  --surface: rgba(255,255,255,0.7);
+  --btn: #111; --btn-fg: #f0eeeb;
+  --win: #1a7a42; --lose: #b52038; --tie: #666;
+  --glow-win: rgba(26,120,66,0.7);
+  --glow-lose: rgba(181,32,56,0.65);
+  --glow-tie: rgba(140,140,140,0.5);
+  --tr: 0.34s cubic-bezier(0.4,0,0.2,1);
+}
+[data-theme=dark] {
+  --bg: #0c0c0c;
+  --text: #f0eeeb;
+  --muted: rgba(240,238,235,0.28);
+  --border: rgba(240,238,235,0.08);
+  --surface: rgba(24,24,24,0.88);
+  --btn: #f0eeeb; --btn-fg: #0c0c0c;
+  --win: #50c87c; --lose: #e0506a; --tie: #aaa;
+  --glow-win: rgba(80,200,124,0.72);
+  --glow-lose: rgba(224,80,106,0.68);
+  --glow-tie: rgba(160,160,160,0.5);
 }
 
-[data-theme="dark"]{
-  --bg:#0f172a;
-  --text:#fff;
-  --card:#1e293b;
-  --accent:#fff;
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 430px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  transition: background var(--tr), color var(--tr);
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  display:flex;
-  justify-content:center;
+/* ══ HEADER ══ */
+.hdr {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 0;
+  flex-shrink: 0;
+}
+.hdr-title {
+  font-size: 0.56rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hdr-right { display: flex; align-items: center; gap: 10px; }
+
+/* ══ ONLINE BADGE ══ */
+.online-badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.5rem; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--win);
+}
+.ob-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--win);
+  animation: obPulse 1.4s ease-in-out infinite;
+}
+@keyframes obPulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.35; transform:scale(0.75); }
 }
 
-.container{
-  width:100%;
-  max-width:430px;
-  padding:20px;
+.speaker-btn {
+  width: 30px; height: 30px;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); outline: none;
+}
+.speaker-btn svg { width: 17px; height: 17px; }
+
+.toggle {
+  width: 36px; height: 20px;
+  background: var(--border); border: 1px solid var(--border);
+  border-radius: 20px; cursor: pointer; position: relative;
+}
+.toggle::after {
+  content: ''; position: absolute;
+  width: 13px; height: 13px; background: var(--text);
+  border-radius: 50%; top: 50%; left: 3px;
+  transform: translateY(-50%); transition: left var(--tr);
+}
+[data-theme=dark] .toggle::after { left: calc(100% - 16px); }
+
+/* ══ SCORE & BF5 ══ */
+.score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.score-pill {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 50px; padding: 6px 16px;
+  display: flex; align-items: center; gap: 7px;
+  backdrop-filter: blur(12px);
+}
+.sl { font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.sn { font-size: 1rem; font-weight: 600; }
+
+.bf5 { display: flex; gap: 7px; margin-top: 8px; }
+.bf5-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  border: 1.5px solid var(--muted); transition: all 0.3s ease;
+}
+.bf5-dot.p1 { background: var(--text); border-color: var(--text); transform: scale(1.3); }
+.bf5-dot.p2 { background: var(--lose); border-color: var(--lose); transform: scale(1.3); }
+
+/* ══ STAGE ══ */
+.stage-wrap {
+  flex: 0 0 260px; width: 100%;
+  position: relative; display: flex; align-items: center; justify-content: center;
+}
+.stage {
+  width: 100%; height: 100%; display: flex;
+  align-items: flex-end; justify-content: center;
+  padding-bottom: 12px; position: relative;
+}
+.obj {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  flex: 1; transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.34,1.4,0.64,1);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.obj img { display: block; object-fit: contain; pointer-events: none; }
+
+#o-rock img { height: clamp(140px,32vw,190px); animation-delay: 0s; }
+#o-paper img { height: clamp(110px,25vw,155px); animation-delay: 1.1s; }
+#o-scissors img { height: clamp(148px,34vw,198px); animation-delay: 2.2s; }
+
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.obj img { animation: float 4s ease-in-out infinite; }
+
+.obj.selected img { animation: selectedPulse 2s ease-in-out infinite; }
+@keyframes selectedPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+/* ══ COUNTDOWN ══ */
+.countdown {
+  position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+  display: none; flex-direction: column; align-items: center; gap: 6px;
+}
+.countdown.show { display: flex; }
+.cd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text); opacity: 0.18; transition: 0.22s; }
+.cd-dot.active { opacity: 1; transform: scale(1.5); }
+
+/* ══ HISTORY ══ */
+.history { width: 100%; padding: 10px 20px; flex-shrink: 0; }
+.hlbl { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.hlist { display: flex; flex-direction: column; gap: 4px; }
+.hitem {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 9px; padding: 7px 12px;
+  display: flex; align-items: center; justify-content: space-between;
 }
 
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:20px;
+/* ══ BUTTONS ══ */
+.play-row { padding: 10px 20px; width: 100%; display: flex; justify-content: center; }
+.pbtn {
+  background: var(--btn); color: var(--btn-fg); border: none;
+  border-radius: 50px; padding: 13px 0; width: 100%; max-width: 260px;
+  font-family: 'Outfit', sans-serif; font-size: 0.76rem; letter-spacing: 2.5px;
+  text-transform: uppercase; cursor: pointer; transition: 0.2s;
 }
+.pbtn:disabled { opacity: 0.2; cursor: not-allowed; }
 
-button{
-  border:none;
-  padding:10px 14px;
-  border-radius:10px;
-  background:var(--card);
-  color:var(--text);
-  cursor:pointer;
+.chal-btn {
+  background: none; border: 1px solid var(--border); border-radius: 50px;
+  padding: 10px 0; width: 100%; max-width: 260px; font-size: 0.63rem;
+  color: var(--muted); cursor: pointer; letter-spacing: 1.5px;
+  text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 7px;
 }
-
-.scoreboard{
-  display:flex;
-  justify-content:space-between;
-  margin:20px 0;
-}
-
-.score{
-  background:var(--card);
-  padding:10px 16px;
-  border-radius:12px;
-  font-weight:bold;
-}
-
-.stage{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.choice{
-  flex:1;
-  background:var(--card);
-  border-radius:16px;
-  padding:10px;
-  text-align:center;
-  cursor:pointer;
-  transition:.2s;
-}
-
-.choice:hover{
-  transform:translateY(-5px);
-}
-
-.choice img{
-  width:100%;
-  max-width:100px;
-}
-
-.history{
-  margin-top:20px;
-}
-
-.history-item{
-  font-size:14px;
-  padding:6px 0;
-  border-bottom:1px solid #ccc3;
-}
-
-.overlay{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#0008;
-  opacity:0;
-  pointer-events:none;
-  transition:.3s;
-}
-
-.overlay.show{
-  opacity:1;
-  pointer-events:auto;
-}
-
-.result-box{
-  background:var(--bg);
-  padding:30px;
-  border-radius:16px;
-  text-align:center;
-}
-
-.result-win{color:var(--win);}
-.result-lose{color:var(--lose);}
 </style>
 </head>
-
 <body>
 
-<div class="container">
+<audio id="pulse" src="pulse.mp3" preload="auto"></audio>
+<audio id="tick" src="tick.mp3" preload="auto"></audio>
+<audio id="win" src="win.mp3" preload="auto"></audio>
+<audio id="lose" src="lose.mp3" preload="auto"></audio>
 
-<header>
-<h2>Rock Paper Scissors</h2>
-<div>
-<button onclick="toggleTheme()">🌗</button>
-<button onclick="toggleMute()" id="muteBtn">🔊</button>
-</div>
-</header>
-
-<div class="scoreboard">
-<div class="score">You: <span id="p1">0</span></div>
-<div class="score">CPU: <span id="p2">0</span></div>
-</div>
-
-<div class="stage">
-<div class="choice" onclick="play('rock')">
-<img id="rockImg">
-<div>Rock</div>
-</div>
-
-<div class="choice" onclick="play('paper')">
-<img id="paperImg">
-<div>Paper</div>
+<div class="hdr">
+  <span class="hdr-title">RPS</span>
+  <div class="hdr-right">
+    <div class="online-badge"><div class="ob-dot"></div><span>Online</span></div>
+    <button class="speaker-btn" id="spk" onclick="toggleMute()">
+      <svg id="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      </svg>
+      <svg id="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+      </svg>
+    </button>
+    <button class="toggle" onclick="toggleTheme()"></button>
+  </div>
 </div>
 
-<div class="choice" onclick="play('scissors')">
-<img id="scissorsImg">
-<div>Scissors</div>
-</div>
-</div>
-
-<div class="history" id="history"></div>
-
+<div class="score-wrap">
+  <div class="score-pill"><span class="sl">You</span><span class="sn" id="s1">0</span></div>
+  <div class="score-pill"><span class="sn" id="s2">0</span><span class="sl">CPU</span></div>
 </div>
 
-<div class="overlay" id="overlay">
-<div class="result-box">
-<h2 id="resultText"></h2>
-<button onclick="closeOverlay()">Continue</button>
-</div>
+<div class="bf5">
+  <div class="bf5-dot" id="d0"></div><div class="bf5-dot" id="d1"></div>
+  <div class="bf5-dot" id="d2"></div><div class="bf5-dot" id="d3"></div>
+  <div class="bf5-dot" id="d4"></div>
 </div>
 
-<!-- SOUNDTRACK -->
-<audio id="bgm" loop>
-<source src="Chrono_Echoes_rockpaperscissors.mp3" type="audio/mpeg">
-</audio>
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <div class="obj idle" id="o-rock" onclick="pick('rock')">
+      <img src="rock.png" alt="Rock">
+      <div class="obj-lbl">Rock</div>
+    </div>
+    <div class="obj idle" id="o-paper" onclick="pick('paper')">
+      <img src="paper.png" alt="Paper">
+      <div class="obj-lbl">Paper</div>
+    </div>
+    <div class="obj idle" id="o-scissors" onclick="pick('scissors')">
+      <img src="scissors.png" alt="Scissors">
+      <div class="obj-lbl">Scissors</div>
+    </div>
+
+    <div class="countdown" id="countdown">
+      <div class="cd-dots">
+        <div class="cd-dot" id="cd0"></div>
+        <div class="cd-dot" id="cd1"></div>
+        <div class="cd-dot" id="cd2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="history">
+  <div class="hlbl">Recent 5</div>
+  <div class="hlist" id="hlist"></div>
+</div>
+
+<div class="play-row">
+  <button class="pbtn" id="pbtn" onclick="startRound()" disabled>Play</button>
+</div>
+
+<div class="play-row" style="margin-top:0">
+  <button class="chal-btn" onclick="shareGame()">Challenge a Friend</button>
+</div>
 
 <script>
-let score={p1:0,p2:0};
-let muted=false;
+let playerPick = null;
+let history = [];
 
-const choices=["rock","paper","scissors"];
-
-function loadImages(){
-  const theme=document.documentElement.dataset.theme==="dark"?"black":"white";
-  document.getElementById("rockImg").src=`${theme}-rock-rps.PNG`;
-  document.getElementById("paperImg").src=`${theme}-paper-rps.PNG`;
-  document.getElementById("scissorsImg").src=`${theme}-scissors-rps.PNG`;
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
 }
 
-loadImages();
-
-function toggleTheme(){
-  const root=document.documentElement;
-  root.dataset.theme=root.dataset.theme==="dark"?"light":"dark";
-  loadImages();
+function pick(choice) {
+  playerPick = choice;
+  document.querySelectorAll('.obj').forEach(el => el.classList.remove('selected', 'dimmed'));
+  document.getElementById(`o-${choice}`).classList.add('selected');
+  document.querySelectorAll(`.obj:not(#o-${choice})`).forEach(el => el.classList.add('dimmed'));
+  document.getElementById('pbtn').disabled = false;
+  document.getElementById('pulse').play();
 }
 
-function toggleMute(){
-  const bgm=document.getElementById("bgm");
-  muted=!muted;
-  document.getElementById("muteBtn").textContent=muted?"🔇":"🔊";
-  if(muted) bgm.pause();
-  else bgm.play().catch(()=>{});
+async function startRound() {
+  document.getElementById('pbtn').disabled = true;
+  const cd = document.getElementById('countdown');
+  cd.classList.add('show');
+  
+  for(let i=0; i<3; i++) {
+    document.getElementById(`cd${i}`).classList.add('active');
+    document.getElementById('tick').play();
+    await new Promise(r => setTimeout(r, 600));
+  }
+  
+  cd.classList.remove('show');
+  resolveRound();
 }
 
-document.body.addEventListener("click",()=>{
-  if(!muted) document.getElementById("bgm").play().catch(()=>{});
-},{once:true});
-
-function play(user){
-  const cpu=choices[Math.floor(Math.random()*3)];
-  const result=getWinner(user,cpu);
-
-  if(result==="win") score.p1++;
-  if(result==="lose") score.p2++;
-
-  updateScore();
-  updateHistory(user,cpu,result);
-  showResult(result,user,cpu);
+function resolveRound() {
+  const moves = ['rock', 'paper', 'scissors'];
+  const cpuPick = moves[Math.floor(Math.random() * 3)];
+  // Logic to show result and update history...
 }
 
-function getWinner(a,b){
-  if(a===b) return "draw";
-  if(
-    (a==="rock"&&b==="scissors")||
-    (a==="paper"&&b==="rock")||
-    (a==="scissors"&&b==="paper")
-  ) return "win";
-  return "lose";
-}
-
-function updateScore(){
-  document.getElementById("p1").textContent=score.p1;
-  document.getElementById("p2").textContent=score.p2;
-}
-
-function updateHistory(u,c,r){
-  const el=document.createElement("div");
-  el.className="history-item";
-  el.textContent=`You: ${u} | CPU: ${c} → ${r}`;
-  const list=document.getElementById("history");
-  list.prepend(el);
-  if(list.children.length>5) list.removeChild(list.lastChild);
-}
-
-function showResult(r,u,c){
-  const text=document.getElementById("resultText");
-  text.className="";
-  if(r==="win"){text.textContent="You Win!";text.classList.add("result-win");}
-  else if(r==="lose"){text.textContent="You Lose";text.classList.add("result-lose");}
-  else{text.textContent="Draw";}
-  document.getElementById("overlay").classList.add("show");
-}
-
-function closeOverlay(){
-  document.getElementById("overlay").classList.remove("show");
+function shareGame() {
+  const body = "I challenge you to Rock · Paper · Scissors! 🤜";
+  window.location.href = 'sms:?body=' + encodeURIComponent(body);
 }
 </script>
-
 </body>
 </html>
