@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Rock · Paper · Scissors</title>
@@ -368,7 +367,7 @@ body {
 .hlbl { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; flex-shrink: 0; }
 .hlist-scroll {
   overflow-y: auto;
-  max-height: 120px;
+  max-height: 205px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -477,7 +476,158 @@ body {
 .result-area{ animation: fadeUp 0.4s 0.2s  ease both; }
 .play-row   { animation: fadeUp 0.4s 0.24s ease both; }
 .history    { animation: fadeUp 0.4s 0.27s ease both; }
+
+/* ── CHALLENGE BUTTON ── */
+.chal-btn {
+  margin-top: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 10px 0;
+  width: 100%; max-width: 260px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.63rem; font-weight: 400;
+  color: var(--muted); cursor: pointer;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  transition: all 0.2s, border-color var(--tr), color var(--tr);
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.chal-btn:hover { color: var(--text); border-color: var(--text); }
+.chal-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* ── ONLINE BADGE in header ── */
+.online-badge {
+  display: none; align-items: center; gap: 5px;
+  font-size: 0.5rem; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--win);
+}
+.online-badge.show { display: flex; }
+.ob-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--win);
+  animation: obPulse 1.4s ease-in-out infinite;
+}
+@keyframes obPulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:0.35; transform:scale(0.75); }
+}
+
+/* ── CHALLENGE OVERLAY ── */
+.ch-ov {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 120; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+  background: rgba(0,0,0,0.22);
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+.ch-ov.show { opacity: 1; pointer-events: all; }
+.ch-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px; padding: 26px 22px;
+  width: 100%; max-width: 340px;
+  backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  transform: scale(0.9) translateY(14px);
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+}
+.ch-ov.show .ch-card { transform: scale(1) translateY(0); }
+.ch-x {
+  position: absolute; top: 13px; right: 15px;
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 1rem; line-height: 1;
+  padding: 4px; transition: color 0.2s; font-family: 'Outfit', sans-serif;
+}
+.ch-x:hover { color: var(--text); }
+.ch-card-title { font-size: 0.88rem; font-weight: 600; margin-bottom: 3px; }
+.ch-card-sub {
+  font-size: 0.63rem; color: var(--muted);
+  line-height: 1.5; margin-bottom: 18px;
+}
+/* Tabs */
+.ch-tabs {
+  display: flex; background: var(--bg);
+  border-radius: 50px; padding: 3px;
+  margin-bottom: 18px; border: 1px solid var(--border);
+}
+.ch-tab {
+  flex: 1; background: none; border: none;
+  padding: 7px 0; border-radius: 50px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.63rem; color: var(--muted);
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+}
+.ch-tab.active { background: var(--btn); color: var(--btn-fg); }
+/* Panels */
+.ch-panel { display: none; flex-direction: column; align-items: center; gap: 13px; }
+.ch-panel.show { display: flex; }
+/* Code box */
+.ch-code-box {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 16px; text-align: center;
+}
+.ch-code-lbl {
+  font-size: 0.5rem; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
+.ch-code-val {
+  font-size: 2rem; font-weight: 700; letter-spacing: 7px;
+  font-variant-numeric: tabular-nums; transition: opacity 0.3s;
+  min-height: 2.5rem; display: flex; align-items: center; justify-content: center;
+}
+.ch-code-val.dim { opacity: 0.25; font-size: 1rem; letter-spacing: 2px; font-weight: 400; }
+/* Status row */
+.ch-status {
+  font-size: 0.62rem; color: var(--muted);
+  display: flex; align-items: center; gap: 6px; letter-spacing: 0.2px;
+}
+.ch-sdot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--muted);
+  animation: obPulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.ch-sdot.ok  { background: var(--win); animation: none; }
+.ch-sdot.err { background: var(--lose); animation: none; }
+/* Buttons inside modal */
+.ch-main-btn {
+  width: 100%; background: var(--btn); color: var(--btn-fg); border: none;
+  border-radius: 50px; padding: 12px 0;
+  font-family: 'Outfit', sans-serif; font-size: 0.7rem; font-weight: 500;
+  letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer;
+  transition: all 0.18s, background var(--tr);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.ch-main-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(0,0,0,0.14); }
+.ch-main-btn:disabled { opacity: 0.28; transform: none; box-shadow: none; cursor: not-allowed; }
+.ch-main-btn svg { width: 14px; height: 14px; }
+/* Success banner */
+.ch-success {
+  display: none; width: 100%;
+  background: rgba(26,122,66,0.09);
+  border: 1px solid rgba(26,122,66,0.2);
+  border-radius: 10px; padding: 11px 14px;
+  font-size: 0.67rem; color: var(--win);
+  align-items: center; justify-content: center; gap: 7px; text-align: center;
+}
+.ch-success.show { display: flex; }
+/* Code input for join */
+.ch-input {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem; font-weight: 700; letter-spacing: 7px;
+  color: var(--text); text-transform: uppercase; text-align: center;
+  outline: none; transition: border-color 0.2s; caret-color: var(--text);
+}
+.ch-input::placeholder { opacity: 0.18; font-size: 1rem; letter-spacing: 3px; font-weight: 400; }
+.ch-input:focus { border-color: var(--text); }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 </head>
 <body>
 
@@ -485,6 +635,7 @@ body {
 <div class="hdr">
   <span class="hdr-title">RPS</span>
   <div class="hdr-right">
+    <div class="online-badge" id="ob"><div class="ob-dot"></div><span>Online</span></div>
     <button class="speaker-btn" id="spk" onclick="toggleMute()" aria-label="Toggle music">
       <svg id="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -569,6 +720,63 @@ body {
   <button class="pbtn" id="pbtn" onclick="startRound()" disabled>Play</button>
 </div>
 
+<!-- CHALLENGE BUTTON ROW -->
+<div class="play-row" style="margin-top:5px">
+  <button class="chal-btn" id="chal-btn" onclick="openCh()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.4 1.12 2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16z"/>
+    </svg>
+    Challenge a Friend
+  </button>
+</div>
+
+<!-- CHALLENGE OVERLAY -->
+<div class="ch-ov" id="ch-ov">
+  <div class="ch-card">
+    <button class="ch-x" onclick="closeCh()">✕</button>
+    <div class="ch-card-title">Play Online</div>
+    <div class="ch-card-sub">Challenge a friend on their device in real time via WebRTC.</div>
+
+    <div class="ch-tabs">
+      <button class="ch-tab active" id="ch-t0" onclick="chTab(0)">Host Game</button>
+      <button class="ch-tab"        id="ch-t1" onclick="chTab(1)">Accept Challenge</button>
+    </div>
+
+    <!-- HOST PANEL -->
+    <div class="ch-panel show" id="ch-p0">
+      <div class="ch-code-box">
+        <div class="ch-code-lbl">Your Game Code</div>
+        <div class="ch-code-val dim" id="ch-code">···</div>
+      </div>
+      <div class="ch-status">
+        <div class="ch-sdot" id="ch-sdot0"></div>
+        <span id="ch-stxt0">Starting…</span>
+      </div>
+      <button class="ch-main-btn" id="ch-share" onclick="doShare()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.4 1.12 2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16z"/>
+        </svg>
+        Send Challenge via Text
+      </button>
+      <div class="ch-success" id="ch-ok0">✓ Friend connected — close and play!</div>
+    </div>
+
+    <!-- ACCEPT / JOIN PANEL -->
+    <div class="ch-panel" id="ch-p1">
+      <input class="ch-input" id="ch-inp" type="text" maxlength="6"
+        placeholder="ABC123" autocomplete="off" autocorrect="off" spellcheck="false"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      <div class="ch-status" id="ch-jstat" style="display:none">
+        <div class="ch-sdot" id="ch-sdot1"></div>
+        <span id="ch-stxt1"></span>
+      </div>
+      <button class="ch-main-btn" id="ch-join-btn" onclick="doJoin()">Accept Challenge</button>
+      <div class="ch-success" id="ch-ok1">✓ Connected — close and play!</div>
+    </div>
+  </div>
+</div>
+
+
 <!-- HISTORY -->
 <div class="history">
   <div class="hlbl">Recent</div>
@@ -580,7 +788,7 @@ body {
 <!-- WIN OVERLAY -->
 <div class="win-overlay" id="win-ov">
   <div class="win-card">
-    <div class="win-emoji" id="win-emoji">🏴</div>
+    <div class="win-emoji" id="win-emoji">🏆</div>
     <div class="win-title" id="win-title">You Won!</div>
     <div class="win-sub" id="win-sub">Best of 5</div>
     <div class="win-btns">
@@ -966,7 +1174,7 @@ function updateBf5Dots() {
 function showWinOverlay(winner) {
   gameOver=true;
   const isP1=winner==='p1';
-  document.getElementById('win-emoji').textContent = isP1?'🏴':'🏳️';
+  document.getElementById('win-emoji').textContent = isP1?'🏆':'🎯';
   document.getElementById('win-title').textContent = isP1
     ? (mode==='cpu'?'You Won!':'Player 1 Wins!')
     : (mode==='cpu'?'CPU Wins!':'Player 2 Wins!');
@@ -1078,6 +1286,282 @@ function renderHist() {
 // ══════════════════════════════════════
 applyTheme(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
 updatePlayBtn();
+// ════════════════════════════════════════════════════════════
+//  ONLINE MULTIPLAYER  (PeerJS WebRTC — additive only)
+//  Does NOT modify any existing variables or functions.
+//  Intercepts pick() calls when mpActive is true.
+// ════════════════════════════════════════════════════════════
+let mpActive   = false;   // true when peer connection is live
+let mpIsHost   = false;   // true for the player who created the room
+let mpPeer     = null;    // PeerJS Peer instance
+let mpConn     = null;    // PeerJS DataConnection
+let mpMyCode   = '';      // 6-char room code (host only)
+let mpMyChoice = null;    // this player's current choice
+let mpOppChoice= null;    // received opponent choice
+let mpBusy     = false;   // true between pick and result
+
+// ── Peer ID helpers ──────────────────────────────────────────
+function mpRoomId(code) { return 'rpsshoot-v1-' + code.toUpperCase(); }
+function mpGuestId()    { return 'rpsshoot-guest-' + Math.random().toString(36).slice(2,9); }
+function mpMakeCode() {
+  const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => ch[Math.random()*ch.length|0]).join('');
+}
+
+// ── UI helpers ───────────────────────────────────────────────
+function openCh()  { document.getElementById('ch-ov').classList.add('show'); if (!mpPeer || mpPeer.destroyed) initHost(); }
+function closeCh() { document.getElementById('ch-ov').classList.remove('show'); }
+
+function chTab(idx) {
+  [0,1].forEach(i => {
+    document.getElementById('ch-t'+i).classList.toggle('active', i===idx);
+    document.getElementById('ch-p'+i).classList.toggle('show',   i===idx);
+  });
+  if (idx===0 && (!mpPeer || mpPeer.destroyed)) initHost();
+}
+
+function chHostStat(txt, state) {
+  document.getElementById('ch-stxt0').textContent = txt;
+  const d = document.getElementById('ch-sdot0');
+  d.className = 'ch-sdot' + (state==='ok'?' ok': state==='err'?' err':'');
+}
+function chJoinStat(txt, state) {
+  const row = document.getElementById('ch-jstat');
+  row.style.display = txt ? '' : 'none';
+  document.getElementById('ch-stxt1').textContent = txt;
+  const d = document.getElementById('ch-sdot1');
+  d.className = 'ch-sdot' + (state==='ok'?' ok': state==='err'?' err':'');
+}
+
+// ── HOST ─────────────────────────────────────────────────────
+function initHost() {
+  chHostStat('Generating code…', '');
+  document.getElementById('ch-code').textContent = '···';
+  document.getElementById('ch-code').classList.add('dim');
+  document.getElementById('ch-share').disabled = true;
+  document.getElementById('ch-ok0').classList.remove('show');
+
+  mpMyCode = mpMakeCode();
+  if (mpPeer && !mpPeer.destroyed) { try { mpPeer.destroy(); } catch(e){} }
+
+  try { mpPeer = new Peer(mpRoomId(mpMyCode)); } catch(e) {
+    chHostStat('PeerJS unavailable', 'err'); return;
+  }
+
+  mpPeer.on('open', () => {
+    document.getElementById('ch-code').textContent = mpMyCode;
+    document.getElementById('ch-code').classList.remove('dim');
+    document.getElementById('ch-share').disabled = false;
+    chHostStat('Waiting for friend…', '');
+    mpIsHost = true;
+  });
+
+  mpPeer.on('connection', c => {
+    mpConn = c;
+    mpWireConn();
+    chHostStat('Friend connected!', 'ok');
+    document.getElementById('ch-ok0').classList.add('show');
+    document.getElementById('ch-share').disabled = true;
+    mpGoLive();
+    setTimeout(closeCh, 1400);
+  });
+
+  mpPeer.on('error', err => {
+    const m = String(err.message||err);
+    if (m.includes('unavailable') || m.includes('taken')) { setTimeout(initHost, 600); }
+    else { chHostStat('Error — try again', 'err'); }
+  });
+}
+
+// ── JOIN ─────────────────────────────────────────────────────
+function doJoin() {
+  const code = document.getElementById('ch-inp').value.trim().toUpperCase();
+  if (code.length < 4) return;
+  const btn = document.getElementById('ch-join-btn');
+  btn.disabled = true;
+  chJoinStat('Connecting…', '');
+  document.getElementById('ch-jstat').style.display='';
+  document.getElementById('ch-ok1').classList.remove('show');
+
+  if (mpPeer && !mpPeer.destroyed) { try { mpPeer.destroy(); } catch(e){} }
+  try { mpPeer = new Peer(mpGuestId()); } catch(e) {
+    chJoinStat('PeerJS unavailable', 'err'); btn.disabled=false; return;
+  }
+
+  let joined = false;
+  const timeout = setTimeout(() => {
+    if (!joined) { chJoinStat('No response — check code', 'err'); btn.disabled=false; }
+  }, 9000);
+
+  mpPeer.on('open', () => {
+    mpConn = mpPeer.connect(mpRoomId(code), { reliable: true });
+    mpConn.on('open', () => {
+      joined = true; clearTimeout(timeout);
+      mpWireConn();
+      chJoinStat('Connected!', 'ok');
+      document.getElementById('ch-ok1').classList.add('show');
+      btn.disabled = false;
+      mpIsHost = false;
+      mpGoLive();
+      setTimeout(closeCh, 1400);
+    });
+    mpConn.on('error', () => {
+      clearTimeout(timeout);
+      chJoinStat('Could not connect — check code', 'err');
+      btn.disabled = false;
+    });
+  });
+  mpPeer.on('error', () => {
+    clearTimeout(timeout);
+    chJoinStat('Connection failed', 'err');
+    btn.disabled = false;
+  });
+}
+
+// ── WIRE CONNECTION ──────────────────────────────────────────
+function mpWireConn() {
+  mpConn.on('data', mpOnData);
+  mpConn.on('close', mpOnDisconnect);
+  mpConn.on('error', mpOnDisconnect);
+}
+
+function mpOnDisconnect() {
+  if (!mpActive) return;
+  mpActive = false;
+  document.getElementById('ob').classList.remove('show');
+  document.getElementById('p2lbl').textContent = 'CPU';
+  // Notify via result pill
+  const pill = document.getElementById('rpill');
+  pill.textContent = 'Friend disconnected';
+  pill.className = 'rpill show tie';
+  // Reset to CPU mode cleanly
+  softReset();
+}
+
+function mpOnData(data) {
+  if (data.type === 'choice') {
+    mpOppChoice = data.choice;
+    if (mpMyChoice) mpResolve();
+    else {
+      // Show waiting indicator — opponent has picked, we haven't yet
+      // (no UI change needed; they'll see their own waiting state)
+    }
+  }
+  if (data.type === 'rematch') {
+    // Sync rematch on guest's side
+    sc=[0,0]; bf5=[0,0]; gameOver=false;
+    document.getElementById('s1').textContent='0';
+    document.getElementById('s2').textContent='0';
+    hist=[]; renderHist(); updateBf5Dots();
+    softReset();
+  }
+}
+
+// ── ACTIVATE ONLINE MODE ─────────────────────────────────────
+function mpGoLive() {
+  mpActive = true;
+  mpMyChoice = null; mpOppChoice = null; mpBusy = false;
+  document.getElementById('ob').classList.add('show');
+  document.getElementById('p2lbl').textContent = 'Friend';
+  // Fresh scores for the online match
+  sc=[0,0]; bf5=[0,0]; gameOver=false;
+  document.getElementById('s1').textContent='0';
+  document.getElementById('s2').textContent='0';
+  hist=[]; renderHist(); updateBf5Dots();
+  softReset();
+}
+
+// ── SEND ─────────────────────────────────────────────────────
+function mpSend(data) {
+  if (mpConn && mpConn.open) { try { mpConn.send(data); } catch(e){} }
+}
+
+// ── INTERCEPT pick() ─────────────────────────────────────────
+// Save reference to original pick, then override
+const _pick = pick;
+pick = function(c) {
+  if (!mpActive) { _pick(c); return; }   // CPU / local mode — passthrough
+  if (mpBusy || gameOver) return;
+
+  // Visual selection (same logic as original pick)
+  p1c = c;
+  sfx.select();
+  ['rock','paper','scissors'].forEach(x => {
+    const el = document.getElementById('o-'+x);
+    el.classList.remove('idle','selected','dimmed','no-anim');
+    if (x===c) el.classList.add('selected','no-anim');
+    else        el.classList.add('dimmed');
+  });
+
+  mpMyChoice = c;
+  mpSend({ type:'choice', choice:c });
+
+  if (mpOppChoice) {
+    mpResolve();
+  } else {
+    // Show waiting
+    const pill = document.getElementById('rpill');
+    pill.textContent = 'Waiting for friend…';
+    pill.className = 'rpill show tie';
+  }
+};
+
+// ── RESOLVE ──────────────────────────────────────────────────
+function mpResolve() {
+  const myC  = mpMyChoice;
+  const oppC = mpOppChoice;
+  mpMyChoice = null; mpOppChoice = null; mpBusy = true;
+
+  // Clear waiting pill
+  document.getElementById('rpill').className = 'rpill';
+
+  // Run full intro sequence then reveal battle — identical to CPU path
+  runIntro().then(() => runCountdown()).then(() => {
+    showBattle(myC, oppC, getResult(myC, oppC));
+    mpBusy = false;
+  });
+}
+
+// ── PATCH rematch() to sync ──────────────────────────────────
+const _rematch = rematch;
+rematch = function() {
+  if (mpActive) mpSend({ type:'rematch' });
+  _rematch();
+};
+
+// ── SHARE via SMS ────────────────────────────────────────────
+function doShare() {
+  const code = mpMyCode;
+  const url  = location.href.split('?')[0];
+  const link = url + '?join=' + code;
+  const body = `I challenge you to Rock · Paper · Scissors! 🤜\n\nJoin my game:\n${link}\n\nOr enter code: ${code}`;
+  if (navigator.share) {
+    navigator.share({ text: body }).catch(() => mpFallbackShare(body));
+  } else {
+    mpFallbackShare(body);
+  }
+}
+function mpFallbackShare(body) {
+  window.location.href = 'sms:?body=' + encodeURIComponent(body);
+}
+
+// ── AUTO-JOIN from URL ?join=CODE ────────────────────────────
+(function() {
+  const p = new URLSearchParams(location.search);
+  const j = p.get('join');
+  if (j) {
+    setTimeout(() => {
+      openCh();
+      chTab(1);
+      const inp = document.getElementById('ch-inp');
+      if (inp) inp.value = j.toUpperCase().slice(0,6);
+    }, 900);
+  }
+})();
+
+// Also patch onclick for stage objects to go through the new pick()
+// (The HTML already calls pick() by name, so overriding pick works natively)
+
 </script>
 </body>
 </html>
