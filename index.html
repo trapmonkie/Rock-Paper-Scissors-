@@ -1,311 +1,277 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Rock · Paper · Scissors</title>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<!-- Keep your existing HTML and image tags from v11 -->
 
-:root {
-  --bg: #f0eeeb;
-  --text: #111;
-  --muted: rgba(0,0,0,0.28);
-  --border: rgba(0,0,0,0.08);
-  --surface: rgba(255,255,255,0.7);
-  --btn: #111; --btn-fg: #f0eeeb;
-  --win: #1a7a42; --lose: #b52038; --tie: #666;
-  --glow-win: rgba(26,120,66,0.7);
-  --glow-lose: rgba(181,32,56,0.65);
-  --glow-tie: rgba(140,140,140,0.5);
-  --tr: 0.34s cubic-bezier(0.4,0,0.2,1);
-}
-[data-theme=dark] {
-  --bg: #0c0c0c;
-  --text: #f0eeeb;
-  --muted: rgba(240,238,235,0.28);
-  --border: rgba(240,238,235,0.08);
-  --surface: rgba(24,24,24,0.88);
-  --btn: #f0eeeb; --btn-fg: #0c0c0c;
-  --win: #50c87c; --lose: #e0506a; --tie: #aaa;
-  --glow-win: rgba(80,200,124,0.72);
-  --glow-lose: rgba(224,80,106,0.68);
-  --glow-tie: rgba(160,160,160,0.5);
-}
+<!-- Win / Lose icon container -->
+<div id="resultIcon" class="result-icon"></div>
 
-body {
-  font-family: 'Outfit', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: 430px;
-  margin: 0 auto;
-  overflow: hidden;
-  position: relative;
-  transition: background var(--tr), color var(--tr);
-  padding-top: env(safe-area-inset-top, 0);
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
+<!-- Existing buttons; DO NOT change their IDs or structure -->
+<button id="rockBtn">Rock</button>
+<button id="paperBtn">Paper</button>
+<button id="scissorsBtn">Scissors</button>
 
-/* ══ HEADER ══ */
-.hdr {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px 0;
-  flex-shrink: 0;
-}
-.hdr-title {
-  font-size: 0.56rem;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.hdr-right { display: flex; align-items: center; gap: 10px; }
+<button id="twoPlayerBtn">2 Players</button>
+<button id="cpuBtn">vs CPU</button>
 
-/* ══ ONLINE BADGE ══ */
-.online-badge {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 0.5rem; letter-spacing: 1.5px;
-  text-transform: uppercase; color: var(--win);
-}
-.ob-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--win);
-  animation: obPulse 1.4s ease-in-out infinite;
-}
-@keyframes obPulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50% { opacity:0.35; transform:scale(0.75); }
-}
+<button id="challengeButton">Challenge a Friend</button>
 
-.speaker-btn {
-  width: 30px; height: 30px;
-  background: none; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--muted); outline: none;
-}
-.speaker-btn svg { width: 17px; height: 17px; }
-
-.toggle {
-  width: 36px; height: 20px;
-  background: var(--border); border: 1px solid var(--border);
-  border-radius: 20px; cursor: pointer; position: relative;
-}
-.toggle::after {
-  content: ''; position: absolute;
-  width: 13px; height: 13px; background: var(--text);
-  border-radius: 50%; top: 50%; left: 3px;
-  transform: translateY(-50%); transition: left var(--tr);
-}
-[data-theme=dark] .toggle::after { left: calc(100% - 16px); }
-
-/* ══ SCORE & BF5 ══ */
-.score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-.score-pill {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 50px; padding: 6px 16px;
-  display: flex; align-items: center; gap: 7px;
-  backdrop-filter: blur(12px);
-}
-.sl { font-size: 0.55rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
-.sn { font-size: 1rem; font-weight: 600; }
-
-.bf5 { display: flex; gap: 7px; margin-top: 8px; }
-.bf5-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  border: 1.5px solid var(--muted); transition: all 0.3s ease;
-}
-.bf5-dot.p1 { background: var(--text); border-color: var(--text); transform: scale(1.3); }
-.bf5-dot.p2 { background: var(--lose); border-color: var(--lose); transform: scale(1.3); }
-
-/* ══ STAGE ══ */
-.stage-wrap {
-  flex: 0 0 260px; width: 100%;
-  position: relative; display: flex; align-items: center; justify-content: center;
-}
-.stage {
-  width: 100%; height: 100%; display: flex;
-  align-items: flex-end; justify-content: center;
-  padding-bottom: 12px; position: relative;
-}
-.obj {
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  flex: 1; transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.34,1.4,0.64,1);
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
-}
-.obj img { display: block; object-fit: contain; pointer-events: none; }
-
-#o-rock img { height: clamp(140px,32vw,190px); animation-delay: 0s; }
-#o-paper img { height: clamp(110px,25vw,155px); animation-delay: 1.1s; }
-#o-scissors img { height: clamp(148px,34vw,198px); animation-delay: 2.2s; }
-
-@keyframes float {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-.obj img { animation: float 4s ease-in-out infinite; }
-
-.obj.selected img { animation: selectedPulse 2s ease-in-out infinite; }
-@keyframes selectedPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-
-/* ══ COUNTDOWN ══ */
-.countdown {
-  position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
-  display: none; flex-direction: column; align-items: center; gap: 6px;
-}
-.countdown.show { display: flex; }
-.cd-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text); opacity: 0.18; transition: 0.22s; }
-.cd-dot.active { opacity: 1; transform: scale(1.5); }
-
-/* ══ HISTORY ══ */
-.history { width: 100%; padding: 10px 20px; flex-shrink: 0; }
-.hlbl { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-.hlist { display: flex; flex-direction: column; gap: 4px; }
-.hitem {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 9px; padding: 7px 12px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-
-/* ══ BUTTONS ══ */
-.play-row { padding: 10px 20px; width: 100%; display: flex; justify-content: center; }
-.pbtn {
-  background: var(--btn); color: var(--btn-fg); border: none;
-  border-radius: 50px; padding: 13px 0; width: 100%; max-width: 260px;
-  font-family: 'Outfit', sans-serif; font-size: 0.76rem; letter-spacing: 2.5px;
-  text-transform: uppercase; cursor: pointer; transition: 0.2s;
-}
-.pbtn:disabled { opacity: 0.2; cursor: not-allowed; }
-
-.chal-btn {
-  background: none; border: 1px solid var(--border); border-radius: 50px;
-  padding: 10px 0; width: 100%; max-width: 260px; font-size: 0.63rem;
-  color: var(--muted); cursor: pointer; letter-spacing: 1.5px;
-  text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 7px;
-}
-</style>
-</head>
-<body>
-
-<audio id="pulse" src="pulse.mp3" preload="auto"></audio>
-<audio id="tick" src="tick.mp3" preload="auto"></audio>
-<audio id="win" src="win.mp3" preload="auto"></audio>
-<audio id="lose" src="lose.mp3" preload="auto"></audio>
-
-<div class="hdr">
-  <span class="hdr-title">RPS</span>
-  <div class="hdr-right">
-    <div class="online-badge"><div class="ob-dot"></div><span>Online</span></div>
-    <button class="speaker-btn" id="spk" onclick="toggleMute()">
-      <svg id="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-      </svg>
-      <svg id="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
-      </svg>
-    </button>
-    <button class="toggle" onclick="toggleTheme()"></button>
-  </div>
-</div>
-
-<div class="score-wrap">
-  <div class="score-pill"><span class="sl">You</span><span class="sn" id="s1">0</span></div>
-  <div class="score-pill"><span class="sn" id="s2">0</span><span class="sl">CPU</span></div>
-</div>
-
-<div class="bf5">
-  <div class="bf5-dot" id="d0"></div><div class="bf5-dot" id="d1"></div>
-  <div class="bf5-dot" id="d2"></div><div class="bf5-dot" id="d3"></div>
-  <div class="bf5-dot" id="d4"></div>
-</div>
-
-<div class="stage-wrap">
-  <div class="stage" id="stage">
-    <div class="obj idle" id="o-rock" onclick="pick('rock')">
-      <img src="rock.png" alt="Rock">
-      <div class="obj-lbl">Rock</div>
-    </div>
-    <div class="obj idle" id="o-paper" onclick="pick('paper')">
-      <img src="paper.png" alt="Paper">
-      <div class="obj-lbl">Paper</div>
-    </div>
-    <div class="obj idle" id="o-scissors" onclick="pick('scissors')">
-      <img src="scissors.png" alt="Scissors">
-      <div class="obj-lbl">Scissors</div>
-    </div>
-
-    <div class="countdown" id="countdown">
-      <div class="cd-dots">
-        <div class="cd-dot" id="cd0"></div>
-        <div class="cd-dot" id="cd1"></div>
-        <div class="cd-dot" id="cd2"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="history">
-  <div class="hlbl">Recent 5</div>
-  <div class="hlist" id="hlist"></div>
-</div>
-
-<div class="play-row">
-  <button class="pbtn" id="pbtn" onclick="startRound()" disabled>Play</button>
-</div>
-
-<div class="play-row" style="margin-top:0">
-  <button class="chal-btn" onclick="shareGame()">Challenge a Friend</button>
-</div>
+<!-- PeerJS (unpkg, safer for Vercel) -->
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <script>
-let playerPick = null;
-let history = [];
+  // --- Minimal v12 integration on top of v11 ---
 
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
-}
+  // 1) Win / Lose icon rendering with SVG (replacing emoji)
+  const resultIconEl = document.getElementById('resultIcon');
 
-function pick(choice) {
-  playerPick = choice;
-  document.querySelectorAll('.obj').forEach(el => el.classList.remove('selected', 'dimmed'));
-  document.getElementById(`o-${choice}`).classList.add('selected');
-  document.querySelectorAll(`.obj:not(#o-${choice})`).forEach(el => el.classList.add('dimmed'));
-  document.getElementById('pbtn').disabled = false;
-  document.getElementById('pulse').play();
-}
+  function renderResultIcon(result) {
+    // result: 'win' | 'lose' | 'tie'
+    if (!resultIconEl) return;
 
-async function startRound() {
-  document.getElementById('pbtn').disabled = true;
-  const cd = document.getElementById('countdown');
-  cd.classList.add('show');
-  
-  for(let i=0; i<3; i++) {
-    document.getElementById(`cd${i}`).classList.add('active');
-    document.getElementById('tick').play();
-    await new Promise(r => setTimeout(r, 600));
+    const color = getComputedStyle(document.documentElement)
+      .getPropertyValue('--text-color') || '#ffffff';
+
+    if (result === 'win') {
+      resultIconEl.innerHTML = `
+        <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="${color}" stroke-width="1.6" />
+          <path d="M9 13.5l1.8 1.8L15 11" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M8 17h8" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+      `;
+    } else if (result === 'lose') {
+      resultIconEl.innerHTML = `
+        <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="${color}" stroke-width="1.6" />
+          <circle cx="12" cy="12" r="4.8" fill="none" stroke="${color}" stroke-width="1.6" />
+          <circle cx="12" cy="12" r="1.2" fill="${color}" />
+        </svg>
+      `;
+    } else {
+      resultIconEl.innerHTML = '';
+    }
   }
-  
-  cd.classList.remove('show');
-  resolveRound();
-}
 
-function resolveRound() {
-  const moves = ['rock', 'paper', 'scissors'];
-  const cpuPick = moves[Math.floor(Math.random() * 3)];
-  // Logic to show result and update history...
-}
+  // 2) Lightweight confetti (editorial style)
+  function launchConfetti() {
+    const confettiContainer = document.createElement('div');
+    confettiContainer.style.position = 'fixed';
+    confettiContainer.style.left = '0';
+    confettiContainer.style.top = '0';
+    confettiContainer.style.width = '100%';
+    confettiContainer.style.height = '100%';
+    confettiContainer.style.pointerEvents = 'none';
+    confettiContainer.style.overflow = 'hidden';
+    confettiContainer.style.zIndex = '9999';
+    document.body.appendChild(confettiContainer);
 
-function shareGame() {
-  const body = "I challenge you to Rock · Paper · Scissors! 🤜";
-  window.location.href = 'sms:?body=' + encodeURIComponent(body);
-}
+    const color = getComputedStyle(document.documentElement)
+      .getPropertyValue('--text-color') || '#ffffff';
+    const count = 28;
+
+    for (let i = 0; i < count; i++) {
+      const bar = document.createElement('div');
+      bar.style.position = 'absolute';
+      bar.style.width = '2px';
+      bar.style.height = `${40 + Math.random() * 40}px`;
+      bar.style.left = `${Math.random() * 100}%`;
+      bar.style.top = `-80px`;
+      bar.style.backgroundColor = color.trim() || '#ffffff';
+      bar.style.opacity = '0.9';
+      bar.style.transform = `translate3d(0, 0, 0)`;
+      bar.style.transition = 'transform 3.8s ease-out, opacity 3.8s ease-out';
+      confettiContainer.appendChild(bar);
+
+      // trigger layout
+      void bar.offsetHeight;
+
+      const translateY = window.innerHeight + 120;
+      const driftX = (Math.random() - 0.5) * 60;
+
+      bar.style.transform = `translate3d(${driftX}px, ${translateY}px, 0)`;
+      bar.style.opacity = '0';
+    }
+
+    setTimeout(() => {
+      if (confettiContainer.parentNode) {
+        confettiContainer.parentNode.removeChild(confettiContainer);
+      }
+    }, 4000);
+  }
+
+  // Example hook: call renderResultIcon + confetti from your existing game logic
+  // Integrate this into your v11 "end round" logic:
+  function onRoundFinished(result) {
+    // result: 'win' | 'lose' | 'tie'
+    renderResultIcon(result);
+    if (result === 'win') {
+      launchConfetti();
+    }
+  }
+
+  // 3) Challenge-a-Friend (PeerJS auto-link flow)
+  const challengeBtn = document.getElementById('challengeButton');
+  const opponentLabel = document.getElementById('opponentLabel'); // optional if you have one
+  let peer = null;
+  let conn = null;
+  let isHost = false;
+
+  function isOnline() {
+    return navigator.onLine;
+  }
+
+  function updateChallengeButtonState() {
+    if (!challengeBtn) return;
+    if (isOnline()) {
+      challengeBtn.disabled = false;
+      challengeBtn.style.opacity = '1';
+    } else {
+      challengeBtn.disabled = true;
+      challengeBtn.style.opacity = '0.35';
+    }
+  }
+
+  window.addEventListener('online', updateChallengeButtonState);
+  window.addEventListener('offline', updateChallengeButtonState);
+  updateChallengeButtonState();
+
+  function initializePeerIfNeeded() {
+    if (peer) return;
+
+    peer = new Peer(undefined, {
+      debug: 1
+    });
+
+    peer.on('open', (id) => {
+      const url = new URL(window.location.href);
+      const code = id;
+      url.searchParams.set('code', code);
+      if (isHost) {
+        const shareUrl = url.toString();
+        // Use native share if available, otherwise fallback to prompt
+        if (navigator.share) {
+          navigator.share({
+            title: 'Rock Paper Scissors',
+            text: 'Tap to play Rock Paper Scissors with me!',
+            url: shareUrl
+          }).catch(() => {});
+        } else {
+          window.prompt('Send this link to your friend:', shareUrl);
+        }
+      }
+    });
+
+    peer.on('connection', (c) => {
+      conn = c;
+      setupConnectionHandlers();
+      onFriendConnected();
+    });
+
+    peer.on('error', (err) => {
+      console.error(err);
+      if (challengeBtn) {
+        challengeBtn.textContent = 'Challenge a Friend';
+      }
+    });
+  }
+
+  function setupConnectionHandlers() {
+    if (!conn) return;
+    conn.on('data', (data) => {
+      // Handle messages from friend here (moves, resets, etc.)
+      // You can map this onto your v11 "2 Player" logic.
+      handleIncomingMessage(data);
+    });
+
+    conn.on('close', () => {
+      conn = null;
+      onFriendDisconnected();
+    });
+  }
+
+  function onFriendConnected() {
+    if (opponentLabel) {
+      opponentLabel.textContent = 'Friend';
+    }
+    // Reset scores, etc. Hook into your existing reset logic:
+    resetGameForMultiplayer();
+    if (challengeBtn) {
+      challengeBtn.textContent = 'Connected';
+    }
+  }
+
+  function onFriendDisconnected() {
+    if (opponentLabel) {
+      opponentLabel.textContent = 'CPU';
+    }
+    if (challengeBtn) {
+      challengeBtn.textContent = 'Challenge a Friend';
+    }
+  }
+
+  function handleIncomingMessage(data) {
+    // { type: 'move', value: 'rock' } etc.
+    // Integrate with your existing v11 move handling.
+    // Example:
+    if (data.type === 'move') {
+      applyRemoteMove(data.value);
+    } else if (data.type === 'reset') {
+      resetGameForMultiplayer();
+    }
+  }
+
+  function sendMessage(msg) {
+    if (conn && conn.open) {
+      conn.send(msg);
+    }
+  }
+
+  // Hook these sendMessage calls into your existing v11 UI:
+  // e.g. when local player picks a move in Friend mode, call:
+  // sendMessage({ type: 'move', value: 'rock' });
+
+  // Host flow
+  if (challengeBtn) {
+    challengeBtn.addEventListener('click', () => {
+      if (!isOnline()) return;
+      isHost = true;
+      challengeBtn.disabled = true;
+      challengeBtn.textContent = 'Send Challenge via Text…';
+      initializePeerIfNeeded();
+    });
+  }
+
+  // Receiver flow
+  const url = new URL(window.location.href);
+  const incomingCode = url.searchParams.get('code');
+  if (incomingCode) {
+    // Receiver: auto-connect
+    isHost = false;
+    initializePeerIfNeeded();
+    const waitForPeer = setInterval(() => {
+      if (peer && peer.open) {
+        clearInterval(waitForPeer);
+        if (challengeBtn) {
+          challengeBtn.textContent = 'Connecting…';
+          challengeBtn.disabled = true;
+        }
+        conn = peer.connect(incomingCode);
+        setupConnectionHandlers();
+        conn.on('open', () => {
+          onFriendConnected();
+        });
+      }
+    }, 100);
+  }
+
+  // 4) Stubs to connect to your existing v11 logic
+  function resetGameForMultiplayer() {
+    // Call your existing reset logic here.
+    // Example:
+    // resetScores();
+    // resetUI();
+  }
+
+  function applyRemoteMove(move) {
+    // Map friend move into your existing v11 "2 Players" logic.
+    // Example: handleSecondPlayerMove(move);
+  }
 </script>
-</body>
-</html>
