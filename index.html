@@ -161,6 +161,7 @@
 <script>
 // ══════════════════════════════════════
 //  ASSETS & OFFLINE FALLBACKS
+//  Using the exact PNG filenames you provided
 // ══════════════════════════════════════
 const ASSETS = {
   rock: { dark: 'black-rock-rps.PNG', light: 'white-rock-rps.PNG' },
@@ -168,7 +169,7 @@ const ASSETS = {
   scissors: { dark: 'black-scissors-rps.PNG', light: 'white-scissors-rps.PNG' }
 };
 
-// Perfect Geometric SVGs: Circle, Square, X
+// Perfect Geometric SVGs: Circle, Square, X (offline fallback)
 const OFFLINE_SVGS = {
   rock: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23888"/></svg>`,
   paper: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="%23888"/></svg>`,
@@ -208,7 +209,7 @@ window.onload = () => {
   window.addEventListener('online', checkNetwork);
   window.addEventListener('offline', checkNetwork);
 
-  // Auto-connect if joining from deep link
+  // Auto-connect if joining from SMS deep link
   const urlParams = new URLSearchParams(window.location.search);
   const joinCode = urlParams.get('join');
   
@@ -245,12 +246,12 @@ function checkNetwork() {
   } else {
     dot.classList.add('offline');
     lbl.innerText = 'Offline';
-    resetChallengeBtn();
+    resetChallengeBtn(); // Cancel active challenges if offline
   }
 }
 
 // ══════════════════════════════════════
-//  CHALLENGE LOGIC – opens contacts via Web Share, falls back to SMS
+//  CHALLENGE LOGIC (30s Timeout) with Web Share + fallback
 // ══════════════════════════════════════
 function initChallenge() {
   if (!navigator.onLine) return alert("You are offline!");
@@ -260,8 +261,8 @@ function initChallenge() {
   document.getElementById('c-text').innerText = "Waiting for friend...";
   
   const link = `${window.location.origin}${window.location.pathname}?join=${peer.id}`;
-
-  // Try Web Share (opens contact picker)
+  
+  // Try using Web Share API first (opens contact list on mobile)
   if (navigator.share) {
     navigator.share({
       title: 'Rock Paper Scissors Challenge',
@@ -269,17 +270,17 @@ function initChallenge() {
       url: link,
     }).catch((err) => {
       if (err.name !== 'AbortError') {
-        // fallback to SMS
+        // fallback to SMS if share fails
         window.location.href = `sms:?&body=Play RPS with me! Tap here: ${link}`;
       }
       resetChallengeBtn();
     });
   } else {
-    // Fallback to SMS
+    // Fallback to SMS for devices without Web Share
     window.location.href = `sms:?&body=Play RPS with me! Tap here: ${link}`;
   }
 
-  // 30 second timeout
+  // 30 second timeout. You can keep playing CPU while this counts down!
   clearTimeout(challengeTimer);
   challengeTimer = setTimeout(() => {
     if (!conn || !conn.open) {
@@ -302,6 +303,7 @@ function connectToPeer(id) {
 function setupConnection() {
   clearTimeout(challengeTimer);
   
+  // Clean UI Swap: CPU becomes P2
   document.getElementById('chal-btn').style.display = 'none'; 
   document.getElementById('p2lbl').innerText = "P2"; 
   myScore = 0; oppScore = 0; 
@@ -321,6 +323,7 @@ function setupConnection() {
 function pick(choice) {
   myMove = choice;
   
+  // Visually select the object
   document.querySelectorAll('.obj').forEach(el => el.classList.remove('selected', 'dimmed'));
   const selectedObj = document.getElementById(`o-${choice}`);
   selectedObj.classList.add('selected');
@@ -335,6 +338,7 @@ function startRound() {
   if (!myMove) return;
   document.getElementById('pbtn').disabled = true;
 
+  // If connected to a peer, send move. Otherwise, CPU math immediately.
   if (conn && conn.open) {
     conn.send({ type: 'MOVE', choice: myMove });
     if (oppMove) {
@@ -343,6 +347,7 @@ function startRound() {
       document.getElementById('pbtn').innerText = "Waiting for P2...";
     }
   } else {
+    // Standard CPU Fallback
     const choices = ['rock', 'paper', 'scissors'];
     oppMove = choices[Math.floor(Math.random() * 3)];
     resolveRound();
@@ -387,6 +392,7 @@ function updateHistory(res, m1, m2) {
   `;
   hlist.prepend(div);
   
+  // Hard cap at 5 items to keep it minimalist
   if (hlist.children.length > 5) {
     hlist.removeChild(hlist.lastChild);
   }
