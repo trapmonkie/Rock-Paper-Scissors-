@@ -1,264 +1,62 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Rock · Paper · Scissors</title>
+<style>
+  /* SVG Styles for Offline Mode */
+  .obj svg {
+    height: clamp(100px, 25vw, 150px);
+    width: auto;
+    fill: var(--text);
+    display: none; /* Hidden by default */
+    animation: float 4s ease-in-out infinite;
+  }
   
-  <link rel="preload" href="images/white-rock-rps.PNG" as="image">
-  <link rel="preload" href="images/black-rock-rps.PNG" as="image">
+  body.is-offline .obj img { display: none; }
+  body.is-offline .obj svg { display: block; }
 
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+  .net-dot.offline { 
+    background: #e0506a; 
+    box-shadow: 0 0 10px rgba(224, 80, 106, 0.6); 
+  }
+</style>
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #f0eeeb; --text: #111; --muted: rgba(0,0,0,0.28); --border: rgba(0,0,0,0.08);
-      --surface: rgba(255,255,255,0.7); --btn: #111; --btn-fg: #f0eeeb;
-      --win: #1a7a42; --lose: #b52038; --tie: #666; --tr: 0.34s cubic-bezier(0.4,0,0.2,1);
-    }
-    [data-theme=dark] {
-      --bg: #0c0c0c; --text: #f0eeeb; --muted: rgba(240,238,235,0.28); --border: rgba(240,238,235,0.08);
-      --surface: rgba(24,24,24,0.88); --btn: #f0eeeb; --btn-fg: #0c0c0c;
-    }
-
-    body {
-      font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text);
-      height: 100dvh; display: flex; flex-direction: column; align-items: center;
-      max-width: 430px; margin: 0 auto; overflow: hidden; position: relative;
-      transition: background var(--tr), color var(--tr);
-      padding-top: env(safe-area-inset-top, 0);
-    }
-
-    /* Header & Network */
-    .hdr { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
-    .hdr-title { font-size: 0.56rem; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); }
-    .net-status { display: flex; align-items: center; gap: 6px; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
-    .net-dot { width: 8px; height: 8px; border-radius: 50%; background: #50c87c; transition: 0.3s; }
-    .net-dot.offline { background: #e0506a; box-shadow: 0 0 10px rgba(224, 80, 106, 0.5); }
-
-    /* Score & Dots */
-    .score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-    .score-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 50px; padding: 6px 16px; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(12px); }
-    .sn { font-size: 1rem; font-weight: 600; min-width: 14px; text-align: center; }
-    
-    .bf5 { display: flex; gap: 8px; margin-top: 15px; }
-    .bf5-dot { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--border); transition: 0.4s; }
-    .bf5-dot.p1 { background: var(--text); border-color: var(--text); transform: scale(1.2); }
-    .bf5-dot.p2 { background: var(--lose); border-color: var(--lose); transform: scale(1.2); }
-
-    /* Stage Asset Logic (PNG vs SVG) */
-    .stage-wrap { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; }
-    .stage { width: 100%; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 30px; }
-    .obj { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.4s; }
-    .obj img { height: clamp(140px, 34vw, 200px); width: auto; animation: float 4s ease-in-out infinite; }
-    .obj svg { height: 80px; width: 80px; fill: var(--text); display: none; animation: float 4s ease-in-out infinite; }
-    
-    body.is-offline .obj img { display: none; }
-    body.is-offline .obj svg { display: block; }
-
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .obj.dimmed { opacity: 0.1; transform: scale(0.85); pointer-events: none; }
-    
-    /* Controls */
-    .play-row { padding: 10px 20px 20px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
-    .pbtn { background: var(--btn); color: var(--btn-fg); border: none; border-radius: 50px; padding: 15px; width: 100%; font-family: 'Outfit'; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; }
-    .pbtn:disabled { opacity: 0.2; }
-    .chal-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; padding: 10px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
-    .chal-btn.accepted { color: var(--win); border-color: var(--win); pointer-events: none; }
-
-    /* Result Overlay */
-    .win-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: 0.4s; background: rgba(0,0,0,0.1); backdrop-filter: blur(10px); }
-    .win-overlay.show { opacity: 1; pointer-events: all; }
-    .win-card { background: var(--surface); padding: 40px; border-radius: 30px; text-align: center; width: 85%; max-width: 300px; border: 1px solid var(--border); }
-    
-    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 99; }
-  </style>
-</head>
-<body class="is-online">
-
-<canvas id="confetti"></canvas>
-
-<div class="hdr">
-  <span class="hdr-title">RPS</span>
-  <div class="net-status">
-    <div class="net-dot" id="net-dot"></div>
-    <span id="net-lbl">Online</span>
-    <div style="cursor:pointer; margin-left:12px;" onclick="toggleTheme()">🌓</div>
+<div class="stage">
+  <div class="obj" id="o-rock" onclick="pick('rock')">
+    <img id="i-rock" src="images/white-rock-rps.PNG">
+    <svg viewBox="0 0 24 24" class="svg-icon"><path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,18c-3.31,0-6-2.69-6-6s2.69-6,6-6s6,2.69,6,6 S15.31,18,12,18z"/></svg>
+    <div class="obj-lbl">Rock</div>
+  </div>
+  <div class="obj" id="o-paper" onclick="pick('paper')">
+    <img id="i-paper" src="images/white-paper-rps.PNG">
+    <svg viewBox="0 0 24 24" class="svg-icon"><path d="M14,2H6C4.9,2,4,2.9,4,4v16c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V8L14,2z M13,9V3.5L18.5,9H13z"/></svg>
+    <div class="obj-lbl">Paper</div>
+  </div>
+  <div class="obj" id="o-scissors" onclick="pick('scissors')">
+    <img id="i-scissors" src="images/white-scissors-rps.PNG">
+    <svg viewBox="0 0 24 24" class="svg-icon"><path d="M19.3,13.8c-0.2-0.2-0.5-0.3-0.8-0.3l-2.5,0.4l-2.5-4.3c0.3-0.3,0.5-0.7,0.5-1.1c0-0.8-0.7-1.5-1.5-1.5 S11,7.7,11,8.5c0,0.4,0.2,0.8,0.5,1.1l-2.5,4.3l-2.5-0.4c-0.3,0-0.6,0.1-0.8,0.3c-0.5,0.5-0.5,1.2,0,1.7l3,3c0.2,0.2,0.5,0.3,0.8,0.3 l2.5-0.4l2.5,4.3c-0.3,0.3-0.5,0.7-0.5,1.1c0,0.8,0.7,1.5,1.5,1.5s1.5-0.7,1.5-1.5c0-0.4-0.2-0.8-0.5-1.1l2.5-4.3l2.5,0.4 c0.3,0,0.6-0.1,0.8-0.3C19.8,15,19.8,14.3,19.3,13.8z"/></svg>
+    <div class="obj-lbl">Scissors</div>
   </div>
 </div>
-
-<div class="score-wrap">
-  <div class="score-pill"><span>You</span><span class="sn" id="s1">0</span></div>
-  <div class="score-pill"><span class="sn" id="s2">0</span><span id="p2lbl">CPU</span></div>
-</div>
-
-<div class="bf5" id="bf5">
-  <div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div>
-</div>
-
-<div class="stage-wrap">
-  <div class="stage">
-    <div class="obj" id="o-rock" onclick="pick('rock')">
-      <img id="i-rock" src="images/white-rock-rps.PNG">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
-    </div>
-    <div class="obj" id="o-paper" onclick="pick('paper')">
-      <img id="i-paper" src="images/white-paper-rps.PNG">
-      <svg viewBox="0 0 24 24"><path d="M14,2H6C4.9,2,4,2.9,4,4v16c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V8L14,2z"/></svg>
-    </div>
-    <div class="obj" id="o-scissors" onclick="pick('scissors')">
-      <img id="i-scissors" src="images/white-scissors-rps.PNG">
-      <svg viewBox="0 0 24 24"><path d="M19,3L13,9L15,11L21,5V3M12,12.5A3.5,3.5 0 1,0 15.5,16A3.5,3.5 0 0,0 12,12.5Z"/></svg>
-    </div>
-  </div>
-</div>
-
-<div class="play-row">
-  <button class="pbtn" id="pbtn" onclick="playRound()" disabled>Play</button>
-  <button class="chal-btn" id="chal-btn" onclick="initChallenge()">Challenge a Friend</button>
-</div>
-
-<div class="win-overlay" id="win-ov">
-  <div class="win-card">
-    <h2 id="win-title" style="text-transform:uppercase; font-size:1rem;">Result</h2>
-    <button class="pbtn" style="margin-top:25px;" onclick="resetRound()">Continue</button>
-  </div>
-</div>
-
-<audio id="bgm" src="Chrono_Echoes_rockpaperscissors.mp3" loop></audio>
 
 <script>
-  let myScore=0, oppScore=0, roundIndex=0, myMove=null, oppMove=null, peer, conn, isMP=false;
-  const bgm = document.getElementById('bgm');
-  bgm.volume = 0.22;
-
-  // 1. Network & Theme Logic
   function updateNet() {
     const on = navigator.onLine;
-    document.getElementById('net-dot').className = on ? 'net-dot' : 'net-dot offline';
-    document.getElementById('net-lbl').innerText = on ? 'Online' : 'Offline';
-    document.body.className = on ? 'is-online' : 'is-offline';
-  }
+    const dot = document.getElementById('net-dot');
+    const lbl = document.getElementById('net-lbl');
+    const body = document.body;
 
-  function toggleTheme() {
-    const root = document.documentElement;
-    const isDark = root.getAttribute('data-theme') === 'dark';
-    root.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    const color = isDark ? 'white' : 'black';
-    ['rock','paper','scissors'].forEach(k => {
-      document.getElementById(`i-${k}`).src = `images/${color}-${k}-rps.PNG`;
-    });
-  }
-
-  // 2. Peer/Multiplayer Resilience
-  function setupPeer() {
-    peer = new Peer();
-    peer.on('open', id => {
-      const g = new URLSearchParams(window.location.search).get('g');
-      if(g) { conn = peer.connect(g); setupConnection(); }
-    });
-    peer.on('connection', c => { conn = c; setupConnection(); });
-    peer.on('error', handleDisconnect);
-  }
-
-  function setupConnection() {
-    isMP = true;
-    document.getElementById('p2lbl').innerText = "P2";
-    const btn = document.getElementById('chal-btn');
-    btn.innerText = "Challenge Accepted";
-    btn.classList.add('accepted');
-    conn.on('data', data => {
-      if(data.type === 'MOVE') { oppMove = data.move; if(myMove) resolve(); }
-    });
-    conn.on('close', handleDisconnect);
-  }
-
-  function handleDisconnect() {
-    isMP = false;
-    document.getElementById('p2lbl').innerText = "CPU";
-    document.getElementById('chal-btn').innerText = "Challenge a Friend";
-    document.getElementById('chal-btn').classList.remove('accepted');
-  }
-
-  // 3. Game Logic
-  function pick(m) {
-    myMove = m;
-    if(bgm.paused) bgm.play();
-    document.querySelectorAll('.obj').forEach(o => o.classList.add('dimmed'));
-    document.getElementById(`o-${m}`).classList.remove('dimmed');
-    document.getElementById('pbtn').disabled = false;
-  }
-
-  function playRound() {
-    if(isMP) {
-      conn.send({type: 'MOVE', move: myMove});
-      if(oppMove) resolve();
-      else document.getElementById('pbtn').innerText = "Waiting...";
+    if (on) {
+      dot.className = 'net-dot';
+      lbl.innerText = 'Online';
+      body.classList.remove('is-offline');
     } else {
-      oppMove = ['rock', 'paper', 'scissors'][Math.floor(Math.random()*3)];
-      resolve();
+      dot.className = 'net-dot offline';
+      lbl.innerText = 'Offline';
+      body.classList.add('is-offline'); // Swaps PNGs for SVGs via CSS
     }
   }
 
-  function resolve() {
-    let res = 'tie';
-    if((myMove==='rock'&&oppMove==='scissors')||(myMove==='paper'&&oppMove==='rock')||(myMove==='scissors'&&oppMove==='paper')) {
-      res = 'win'; myScore++;
-    } else if(myMove !== oppMove) {
-      res = 'lose'; oppScore++;
-    }
-
-    const dots = document.querySelectorAll('.bf5-dot');
-    if(roundIndex < 5) {
-      dots[roundIndex].classList.add(res === 'win' ? 'p1' : (res === 'lose' ? 'p2' : 'tie'));
-      roundIndex++;
-    }
-
-    document.getElementById('s1').innerText = myScore;
-    document.getElementById('s2').innerText = oppScore;
-    document.getElementById('win-title').innerText = res.toUpperCase();
-    document.getElementById('win-ov').classList.add('show');
-    if(res === 'win') launchConfetti();
-  }
-
-  function resetRound() {
-    myMove = null; oppMove = null;
-    document.getElementById('win-ov').classList.remove('show');
-    document.querySelectorAll('.obj').forEach(o => o.classList.remove('dimmed'));
-    document.getElementById('pbtn').disabled = true;
-    document.getElementById('pbtn').innerText = "Play";
-  }
-
-  function initChallenge() {
-    const link = `${window.location.origin}${window.location.pathname}?g=${peer.id}`;
-    if(navigator.share) navigator.share({ text: `Play RPS with me: ${link}` });
-    else prompt("Invite Link:", link);
-  }
-
-  function launchConfetti() {
-    const canvas = document.getElementById('confetti');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    let particles = Array.from({length: 40}, () => ({
-      x: Math.random() * canvas.width, y: -20,
-      size: Math.random() * 3 + 2, speed: Math.random() * 3 + 3,
-      color: `hsla(${Math.random() * 360}, 60%, 50%, 0.8)`, drift: Math.random() * 2 - 1
-    }));
-    function frame() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => { p.y += p.speed; p.x += p.drift;
-        ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-      });
-      if (particles.some(p => p.y < canvas.height)) requestAnimationFrame(frame);
-    }
-    frame();
-  }
-
-  window.onload = () => { setupPeer(); updateNet(); };
+  // Listen for browser network events
   window.addEventListener('online', updateNet);
   window.addEventListener('offline', updateNet);
+  
+  // Initial check on load
+  updateNet();
 </script>
-</body>
-</html>
