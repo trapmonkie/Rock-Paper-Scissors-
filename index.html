@@ -1,237 +1,310 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Rock · Paper · Scissors</title>
+  
+  <link rel="preload" href="images/white-rock-rps.PNG" as="image">
+  <link rel="preload" href="images/black-rock-rps.PNG" as="image">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0eeeb; --text: #111; --muted: rgba(0,0,0,0.28); --border: rgba(0,0,0,0.08);
+      --surface: rgba(255,255,255,0.7); --btn: #111; --btn-fg: #f0eeeb;
+      --win: #1a7a42; --lose: #b52038; --tie: #666; --tr: 0.34s cubic-bezier(0.4,0,0.2,1);
+    }
+    [data-theme=dark] {
+      --bg: #0c0c0c; --text: #f0eeeb; --muted: rgba(240,238,235,0.28); --border: rgba(240,238,235,0.08);
+      --surface: rgba(24,24,24,0.88); --btn: #f0eeeb; --btn-fg: #0c0c0c;
+    }
 
-<title>Rock · Paper · Scissors</title>
+    body {
+      font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text);
+      height: 100dvh; display: flex; flex-direction: column; align-items: center;
+      max-width: 430px; margin: 0 auto; overflow: hidden; position: relative;
+      transition: background var(--tr), color var(--tr);
+      padding-top: env(safe-area-inset-top, 0);
+    }
 
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    /* ══ HEADER (from v11) ══ */
+    .hdr { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 0; }
+    .hdr-title { font-size: 0.56rem; letter-spacing: 4px; text-transform: uppercase; color: var(--muted); }
+    .hdr-right { display: flex; align-items: center; gap: 10px; }
+    
+    .speaker-btn { background: none; border: none; cursor: pointer; color: var(--muted); padding: 0; }
+    .speaker-btn svg { width: 18px; height: 18px; }
+    .net-dot { width: 8px; height: 8px; border-radius: 50%; background: #50c87c; transition: 0.3s; }
+    .net-dot.offline { background: #e0506a; box-shadow: 0 0 10px rgba(224, 80, 106, 0.5); }
 
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    /* Score & BF5 */
+    .score-wrap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+    .score-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 50px; padding: 6px 16px; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(12px); }
+    .sn { font-size: 1rem; font-weight: 600; min-width: 14px; text-align: center; }
+    .bf5 { display: flex; gap: 8px; margin-top: 15px; }
+    .bf5-dot { width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid var(--border); transition: 0.4s; }
+    .bf5-dot.p1 { background: var(--text); border-color: var(--text); transform: scale(1.2); }
+    .bf5-dot.p2 { background: var(--lose); border-color: var(--lose); transform: scale(1.2); }
 
-/* Theme */
-:root{
---bg:#f0eeeb;--text:#111;--muted:rgba(0,0,0,0.28);--border:rgba(0,0,0,0.08);
---surface:rgba(255,255,255,0.7);--btn:#111;--btn-fg:#f0eeeb;
---win:#1a7a42;--lose:#b52038;--tie:#666;--tr:.34s cubic-bezier(.4,0,.2,1)
-}
-[data-theme=dark]{
---bg:#0c0c0c;--text:#f0eeeb;--muted:rgba(240,238,235,0.28);--border:rgba(240,238,235,0.08);
---surface:rgba(24,24,24,0.88);--btn:#f0eeeb;--btn-fg:#0c0c0c;
---win:#50c87c;--lose:#e0506a;--tie:#aaa
-}
+    /* ══ STAGE (v11 Floating Logic) ══ */
+    .stage-wrap { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; overflow: visible; }
+    .stage { width: 100%; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 20px; }
+    .obj { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.4s cubic-bezier(0.34,1.4,0.64,1); }
+    
+    /* V11 Proportions */
+    #o-rock img { height: clamp(140px,32vw,190px); width: auto; }
+    #o-paper img { height: clamp(110px,25vw,155px); width: auto; }
+    #o-scissors img { height: clamp(148px,34vw,198px); width: auto; }
 
-html,body{
-height:100%;
-font-family:Outfit,sans-serif;
-background:var(--bg);
-color:var(--text);
-display:flex;
-flex-direction:column;
-align-items:center;
-max-width:430px;
-margin:0 auto;
-overflow:hidden;
-transition:background var(--tr),color var(--tr)
-}
+    /* Animation Delays */
+    .obj img { animation: float 4s ease-in-out infinite; }
+    #o-rock img { animation-delay: 0s; }
+    #o-paper img { animation-delay: 1.1s; }
+    #o-scissors img { animation-delay: 2.2s; }
 
-/* Header */
-.hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0}
-.hdr-title{font-size:.56rem;letter-spacing:4px;text-transform:uppercase;color:var(--muted)}
-.hdr-right{display:flex;gap:12px;align-items:center}
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes winLift { 0%, 100% { transform: translateY(0) scale(1); filter: brightness(1.1); } 50% { transform: translateY(-8px) scale(1.06); filter: brightness(1.22); } }
+    
+    .obj.dimmed { opacity: 0.1; transform: scale(0.85); pointer-events: none; }
+    .obj.winner img { animation: winLift 1.8s ease-in-out infinite !important; }
 
-/* Network */
-.net-status{display:flex;gap:6px;font-size:.55rem;text-transform:uppercase;color:var(--muted)}
-.net-dot{width:8px;height:8px;border-radius:50%;background:#50c87c}
-.net-dot.offline{background:#e0506a}
+    /* Play/Challenge Row */
+    .play-row { padding: 5px 20px 10px; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+    .pbtn { background: var(--btn); color: var(--btn-fg); border: none; border-radius: 50px; padding: 15px; width: 100%; font-family: 'Outfit'; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: 0.2s; }
+    .pbtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+    .pbtn:disabled { opacity: 0.2; }
+    .chal-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 50px; padding: 10px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
 
-/* Buttons */
-.speaker-btn{width:30px;height:30px;border:none;background:none;color:var(--muted);cursor:pointer}
-.toggle{width:36px;height:20px;background:var(--border);border-radius:20px;border:1px solid var(--border);cursor:pointer;position:relative}
-.toggle::after{content:'';position:absolute;width:13px;height:13px;background:var(--text);border-radius:50%;top:50%;left:3px;transform:translateY(-50%);transition:all var(--tr)}
-[data-theme=dark] .toggle::after{left:calc(100% - 16px)}
+    /* History */
+    .history { width: 100%; padding: 10px 20px 20px; display: flex; flex-direction: column; }
+    .hlbl { font-size: 0.48rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .hlist { display: flex; flex-direction: column; gap: 4px; }
+    .hitem { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 7px 12px; display: flex; justify-content: space-between; font-size: 0.64rem; color: var(--muted); animation: fadeUp 0.3s ease; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Score */
-.score-wrap{display:flex;gap:8px;margin-top:12px}
-.score-pill{background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:6px 16px;display:flex;gap:7px}
-.sl{font-size:.55rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
-.sn{font-weight:600}
-
-/* Stage */
-.stage-wrap{flex:1;width:100%;display:flex;align-items:center;justify-content:center}
-.stage{width:100%;display:flex;align-items:flex-end;justify-content:center;padding-bottom:12px}
-.obj{flex:1;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:.4s}
-.obj img{display:block;object-fit:contain;animation:float 4s ease-in-out infinite}
-#o-rock img{height:clamp(140px,32vw,190px)}
-#o-paper img{height:clamp(110px,25vw,155px)}
-#o-scissors img{height:clamp(148px,34vw,198px)}
-.obj.selected{transform:translateY(-12px) scale(1.04)}
-.obj.dimmed{opacity:0;transform:scale(.7) translateY(20px)}
-.obj-lbl{font-size:.5rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
-
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-
-/* Play Buttons */
-.play-row{padding:10px 20px;width:100%;display:flex;flex-direction:column;gap:10px}
-.pbtn{background:var(--btn);color:var(--btn-fg);border:none;border-radius:50px;padding:13px;font-size:.76rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
-.cbtn{border:1px solid var(--border);border-radius:50px;padding:8px;font-size:.6rem;text-transform:uppercase;background:none;color:var(--muted);cursor:pointer}
-
-/* Overlay */
-.win-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:.4s}
-.win-overlay.show{opacity:1;pointer-events:all}
-.win-card{background:var(--surface);border-radius:24px;padding:32px;text-align:center}
-</style>
+    /* Result Overlay */
+    .win-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: 0.4s; background: rgba(0,0,0,0.15); backdrop-filter: blur(10px); }
+    .win-overlay.show { opacity: 1; pointer-events: all; }
+    .win-card { background: var(--surface); padding: 40px; border-radius: 30px; text-align: center; width: 85%; max-width: 300px; border: 1px solid var(--border); transform: scale(0.9); transition: 0.4s; }
+    .win-overlay.show .win-card { transform: scale(1); }
+    
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 99; }
+  </style>
 </head>
-
 <body>
 
-<div class="hdr">
-<span class="hdr-title">RPS</span>
-<div class="hdr-right">
-<div class="net-status">
-<div class="net-dot" id="net-dot"></div>
-<span id="net-lbl">Online</span>
-</div>
+<canvas id="confetti"></canvas>
 
-<button class="speaker-btn" onclick="toggleMute()">🔊</button>
-<button class="toggle" onclick="toggleTheme()"></button>
-</div>
+<div class="hdr">
+  <span class="hdr-title">RPS</span>
+  <div class="hdr-right">
+    <div class="net-dot" id="net-dot"></div>
+    <button class="speaker-btn" onclick="toggleMute()">
+      <svg id="m-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+    </button>
+    <div style="cursor:pointer; font-size: 0.9rem;" onclick="toggleTheme()">🌓</div>
+  </div>
 </div>
 
 <div class="score-wrap">
-<div class="score-pill"><span class="sl">You</span><span id="s1">0</span></div>
-<div class="score-pill"><span id="s2">0</span><span class="sl" id="p2lbl">CPU</span></div>
+  <div class="score-pill"><span>You</span><span class="sn" id="s1">0</span></div>
+  <div class="score-pill"><span class="sn" id="s2">0</span><span id="p2lbl">CPU</span></div>
+</div>
+
+<div class="bf5" id="bf5">
+  <div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div><div class="bf5-dot"></div>
 </div>
 
 <div class="stage-wrap">
-<div class="stage">
-<div class="obj" id="o-rock" onclick="pick('rock')">
-<img id="i-rock"><div class="obj-lbl">Rock</div>
-</div>
-
-<div class="obj" id="o-paper" onclick="pick('paper')">
-<img id="i-paper"><div class="obj-lbl">Paper</div>
-</div>
-
-<div class="obj" id="o-scissors" onclick="pick('scissors')">
-<img id="i-scissors"><div class="obj-lbl">Scissors</div>
-</div>
-</div>
+  <div class="stage">
+    <div class="obj" id="o-rock" onclick="pick('rock')">
+      <img id="i-rock" src="images/white-rock-rps.PNG">
+    </div>
+    <div class="obj" id="o-paper" onclick="pick('paper')">
+      <img id="i-paper" src="images/white-paper-rps.PNG">
+    </div>
+    <div class="obj" id="o-scissors" onclick="pick('scissors')">
+      <img id="i-scissors" src="images/white-scissors-rps.PNG">
+    </div>
+  </div>
 </div>
 
 <div class="play-row">
-<button class="pbtn" id="pbtn" onclick="startRound()" disabled>Play</button>
-<button class="cbtn" onclick="initChallenge()">Challenge a Friend</button>
+  <button class="pbtn" id="pbtn" onclick="playRound()" disabled>Play</button>
+  <button class="chal-btn" id="chal-btn" onclick="initChallenge()">Challenge a Friend</button>
+</div>
+
+<div class="history">
+  <div class="hlbl">Recent</div>
+  <div class="hlist" id="hlist"></div>
 </div>
 
 <div class="win-overlay" id="win-ov">
-<div class="win-card">
-<h2 id="win-title">Result</h2>
-<button class="pbtn" onclick="rematch()">Next Round</button>
-</div>
+  <div class="win-card">
+    <h2 id="win-title" style="text-transform:uppercase; font-size:1.1rem; letter-spacing: 1px;">Result</h2>
+    <p id="win-sub" style="font-size: 0.7rem; color: var(--muted); margin-top: 5px;"></p>
+    <button class="pbtn" style="margin-top:25px;" onclick="resetRound()">Continue</button>
+  </div>
 </div>
 
-<audio id="bgm" loop></audio>
+<audio id="bgm" src="Chrono_Echoes_rockpaperscissors.mp3" loop></audio>
 
 <script>
-/* Assets */
-const ASSETS={
-rock:{dark:'black-rock-rps.PNG',light:'white-rock-rps.PNG'},
-paper:{dark:'black-paper-rps.PNG',light:'white-paper-rps.PNG'},
-scissors:{dark:'black-scissors-rps.PNG',light:'white-scissors-rps.PNG'}
-};
+  let myScore=0, oppScore=0, roundIndex=0, myMove=null, oppMove=null, peer, conn, isMP=false, isMuted=false;
+  const bgm = document.getElementById('bgm');
+  bgm.volume = 0.22;
 
-const OFFLINE={
-rock:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="gray"/></svg>',
-paper:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="gray"/></svg>',
-scissors:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 4l16 16M4 20L20 4" stroke="gray" stroke-width="4"/></svg>'
-};
+  function toggleMute() {
+    isMuted = !isMuted;
+    bgm.muted = isMuted;
+    document.getElementById('m-on').style.opacity = isMuted ? '0.3' : '1';
+  }
 
-function loadImages(theme){
-['rock','paper','scissors'].forEach(x=>{
-const img=document.getElementById("i-"+x);
-img.onerror=()=>img.src=OFFLINE[x];
-img.src=ASSETS[x][theme];
-});
-}
+  function updateNet() {
+    const on = navigator.onLine;
+    document.getElementById('net-dot').className = on ? 'net-dot' : 'net-dot offline';
+  }
 
-/* Game State */
-let myScore=0,oppScore=0,myMove=null,oppMove=null;
-let peer=null,conn=null;
+  function toggleTheme() {
+    const root = document.documentElement;
+    const isDark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    const color = isDark ? 'white' : 'black';
+    ['rock','paper','scissors'].forEach(k => {
+      const el = document.getElementById(`i-${k}`);
+      if(el) el.src = `images/${color}-${k}-rps.PNG`;
+    });
+  }
 
-window.onload=()=>{
-loadImages("dark");
-peer=new Peer(Math.random().toString(36).substring(2,8));
-};
+  function setupPeer() {
+    peer = new Peer();
+    peer.on('open', id => {
+      const g = new URLSearchParams(window.location.search).get('g');
+      if(g) { conn = peer.connect(g); setupConnection(); }
+    });
+    peer.on('connection', c => { conn = c; setupConnection(); });
+  }
 
-/* Theme */
-function toggleTheme(){
-const root=document.documentElement;
-const newTheme=root.getAttribute("data-theme")==="dark"?"light":"dark";
-root.setAttribute("data-theme",newTheme);
-loadImages(newTheme);
-}
+  function initChallenge() {
+    const link = `${window.location.origin}${window.location.pathname}?g=${peer.id}`;
+    const msg = `Play RPS with me: ${link}`;
+    if (navigator.share) {
+      navigator.share({ text: msg }).catch(() => {
+        window.location.href = `sms:?&body=${encodeURIComponent(msg)}`;
+      });
+    } else {
+      window.location.href = `sms:?&body=${encodeURIComponent(msg)}`;
+    }
+  }
 
-/* Pick */
-function pick(c){
-myMove=c;
-document.querySelectorAll(".obj").forEach(e=>e.classList.remove("selected","dimmed"));
-document.getElementById("o-"+c).classList.add("selected");
-document.querySelectorAll(".obj").forEach(e=>{if(!e.classList.contains("selected"))e.classList.add("dimmed")});
-document.getElementById("pbtn").disabled=false;
-}
+  function setupConnection() {
+    isMP = true;
+    document.getElementById('p2lbl').innerText = "P2";
+    const btn = document.getElementById('chal-btn');
+    btn.innerText = "Challenge Accepted";
+    btn.style.color = "var(--win)";
+    conn.on('data', data => {
+      if(data.type === 'MOVE') { oppMove = data.move; if(myMove) resolve(); }
+    });
+  }
 
-/* Play */
-function startRound(){
-const arr=["rock","paper","scissors"];
-oppMove=arr[Math.floor(Math.random()*3)];
-resolveRound();
-}
+  function pick(m) {
+    myMove = m;
+    if(bgm.paused && !isMuted) bgm.play();
+    document.querySelectorAll('.obj').forEach(o => o.classList.add('dimmed'));
+    document.getElementById(`o-${m}`).classList.remove('dimmed');
+    document.getElementById('pbtn').disabled = false;
+  }
 
-/* Resolve */
-function resolveRound(){
-let r="tie";
-if((myMove==="rock"&&oppMove==="scissors")||(myMove==="paper"&&oppMove==="rock")||(myMove==="scissors"&&oppMove==="paper")){r="win";myScore++}
-else if(myMove!==oppMove){r="lose";oppScore++}
+  function playRound() {
+    if(isMP) {
+      conn.send({type: 'MOVE', move: myMove});
+      if(oppMove) resolve();
+      else document.getElementById('pbtn').innerText = "Waiting...";
+    } else {
+      oppMove = ['rock', 'paper', 'scissors'][Math.floor(Math.random()*3)];
+      resolve();
+    }
+  }
 
-document.getElementById("s1").innerText=myScore;
-document.getElementById("s2").innerText=oppScore;
+  function resolve() {
+    let res = 'tie';
+    if((myMove==='rock'&&oppMove==='scissors')||(myMove==='paper'&&oppMove==='rock')||(myMove==='scissors'&&oppMove==='paper')) {
+      res = 'win'; myScore++;
+    } else if(myMove !== oppMove) {
+      res = 'lose'; oppScore++;
+    }
 
-showResult(r);
-}
+    const dots = document.querySelectorAll('.bf5-dot');
+    if(roundIndex < 5) {
+      dots[roundIndex].classList.add(res === 'win' ? 'p1' : (res === 'lose' ? 'p2' : 'tie'));
+      roundIndex++;
+    }
 
-/* Result */
-function showResult(r){
-const ov=document.getElementById("win-ov");
-document.getElementById("win-title").innerText=r==="win"?"You Won!":r==="lose"?"CPU Won":"Tie";
-ov.classList.add("show");
-}
+    updateHistory(res, myMove, oppMove);
+    document.getElementById('s1').innerText = myScore;
+    document.getElementById('s2').innerText = oppScore;
+    
+    const winTitle = document.getElementById('win-title');
+    winTitle.innerText = res === 'win' ? 'YOU WON' : (res === 'lose' ? 'P2 WON' : 'TIE');
+    winTitle.style.color = `var(--${res})`;
+    document.getElementById('win-sub').innerText = `${myMove} vs ${oppMove}`;
+    
+    if(res === 'win') {
+      document.getElementById(`o-${myMove}`).classList.add('winner');
+      launchConfetti();
+    }
+    
+    document.getElementById('win-ov').classList.add('show');
+  }
 
-function rematch(){
-document.getElementById("win-ov").classList.remove("show");
-document.querySelectorAll(".obj").forEach(e=>e.classList.remove("selected","dimmed"));
-myMove=null;
-}
+  function updateHistory(res, m1, m2) {
+    const hlist = document.getElementById('hlist');
+    const div = document.createElement('div');
+    div.className = 'hitem';
+    const label = res === 'win' ? 'You Won' : (res === 'lose' ? 'P2 Won' : 'Tie');
+    div.innerHTML = `
+      <span class="hmoves" style="text-transform:capitalize;">${m1} <span style="opacity:0.3">•</span> ${m2}</span>
+      <span class="hres" style="color:var(--${res})">${label}</span>
+    `;
+    hlist.prepend(div);
+    if (hlist.children.length > 5) hlist.removeChild(hlist.lastChild);
+  }
 
-/* Share */
-function initChallenge(){
-const link=location.href;
-if(navigator.share){
-navigator.share({title:"Play RPS",text:"Join me!",url:link});
-}else{
-window.location=`sms:?body=Play RPS ${link}`;
-}
-}
+  function resetRound() {
+    myMove = null; oppMove = null;
+    document.getElementById('win-ov').classList.remove('show');
+    document.querySelectorAll('.obj').forEach(o => {
+      o.classList.remove('dimmed');
+      o.classList.remove('winner');
+    });
+    document.getElementById('pbtn').disabled = true;
+    document.getElementById('pbtn').innerText = "Play";
+  }
 
-function toggleMute(){
-const bgm=document.getElementById("bgm");
-bgm.paused?bgm.play():bgm.pause();
-}
+  function launchConfetti() {
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    let particles = Array.from({length: 40}, () => ({
+      x: Math.random() * canvas.width, y: -20,
+      size: Math.random() * 3 + 2, speed: Math.random() * 3 + 3,
+      color: `hsla(${Math.random() * 360}, 60%, 50%, 0.8)`, drift: Math.random() * 2 - 1
+    }));
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => { p.y += p.speed; p.x += p.drift;
+        ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+      });
+      if (particles.some(p => p.y < canvas.height)) requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  window.onload = () => { setupPeer(); updateNet(); };
 </script>
-
 </body>
 </html>
