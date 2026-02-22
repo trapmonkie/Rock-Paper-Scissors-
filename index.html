@@ -330,14 +330,6 @@ body {
 }
 .p2-row.on { display: flex; }
 .p2-lbl { font-size: 0.5rem; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); }
-.p2-btns { display: flex; gap: 6px; }
-.p2-btn {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 50px; padding: 7px 14px;
-  font-family: 'Outfit', sans-serif; font-size: 0.64rem;
-  color: var(--muted); cursor: pointer; transition: all 0.18s;
-  backdrop-filter: blur(6px);
-}
 .p2-btn:hover, .p2-btn.on { color: var(--text); border-color: var(--text); }
 .p2-btn:disabled { opacity: 0.22; pointer-events: none; }
 
@@ -490,16 +482,20 @@ body {
   transition: all 0.2s, border-color var(--tr), color var(--tr);
   display: flex; align-items: center; justify-content: center; gap: 7px;
 }
+.chal-btn.match-accepted {
+  border-color: #3b9eff; color: var(--text); cursor: default;
+}
 .chal-btn:hover { color: var(--text); border-color: var(--text); }
 .chal-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
 
 /* ── ONLINE BADGE in header ── */
 .online-badge {
-  display: none; align-items: center; gap: 5px;
-  font-size: 0.5rem; letter-spacing: 1.5px;
-  text-transform: uppercase;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.5rem; letter-spacing: 1.5px; text-transform: uppercase;
 }
-.online-badge.show-badge { display: flex; }
+.badge-online  { color: var(--win); }
+.badge-offline { color: var(--lose); }
+.badge-match   { color: #3b9eff; }
 .ob-dot {
   width: 5px; height: 5px; border-radius: 50%;
   background: var(--win);
@@ -625,7 +621,6 @@ body {
 .ch-input::placeholder { opacity: 0.18; font-size: 1rem; letter-spacing: 3px; font-weight: 400; }
 .ch-input:focus { border-color: var(--text); }
 </style>
-<!-- Preload transparent PNGs for instant rendering -->
 <link rel="preload" as="image" href="black-rock-rps.PNG">
 <link rel="preload" as="image" href="black-paper-rps.PNG">
 <link rel="preload" as="image" href="black-scissors-rps.PNG">
@@ -662,18 +657,7 @@ body {
   <div class="score-pill"><span class="sn" id="s2">0</span><span class="sl" id="p2lbl">CPU</span></div>
 </div>
 
-<!-- BF5 -->
-<div class="bf5" id="bf5">
-  <div class="bf5-dot" id="d0"></div><div class="bf5-dot" id="d1"></div>
-  <div class="bf5-dot" id="d2"></div><div class="bf5-dot" id="d3"></div>
-  <div class="bf5-dot" id="d4"></div>
-</div>
 
-<!-- MODE -->
-<div class="mode">
-  <button class="active" onclick="setMode('cpu')">vs CPU</button>
-  <button onclick="setMode('p2')">2 Players</button>
-</div>
 
 <!-- STAGE WRAPPER — takes all remaining vertical space -->
 <div class="stage-wrap">
@@ -681,17 +665,17 @@ body {
     <!-- Three objects: rock, paper, scissors -->
     <div class="obj idle" id="o-rock" onclick="pick('rock')">
       <img id="i-rock" src="" alt="Rock" decoding="async" loading="eager">
-      <div class="obj-svg" id="svg-rock" style="display:none;align-items:center;justify-content:center;height:clamp(140px,32vw,190px)"><svg viewBox="0 0 100 100" width="90" height="90"><circle cx="50" cy="50" r="46" fill="currentColor"/></svg></div>
+      <div id="svg-rock" style="display:none;align-items:center;justify-content:center;height:clamp(140px,32vw,190px);color:var(--text)"><svg viewBox="0 0 100 100" width="110" height="110"><circle cx="50" cy="50" r="46" fill="currentColor"/></svg></div>
       <div class="obj-lbl">Rock</div>
     </div>
     <div class="obj idle" id="o-paper" onclick="pick('paper')">
       <img id="i-paper" src="" alt="Paper" decoding="async" loading="eager">
-      <div class="obj-svg" id="svg-paper" style="display:none;align-items:center;justify-content:center;height:clamp(110px,25vw,155px)"><svg viewBox="0 0 100 100" width="90" height="90"><rect x="8" y="8" width="84" height="84" rx="10" fill="currentColor"/></svg></div>
+      <div id="svg-paper" style="display:none;align-items:center;justify-content:center;height:clamp(110px,25vw,155px);color:var(--text)"><svg viewBox="0 0 100 100" width="110" height="110"><rect x="8" y="8" width="84" height="84" rx="10" fill="currentColor"/></svg></div>
       <div class="obj-lbl">Paper</div>
     </div>
     <div class="obj idle" id="o-scissors" onclick="pick('scissors')">
       <img id="i-scissors" src="" alt="Scissors" decoding="async" loading="eager">
-      <div class="obj-svg" id="svg-scissors" style="display:none;align-items:center;justify-content:center;height:clamp(148px,34vw,198px)"><svg viewBox="0 0 72 96" width="60" height="80"><line x1="10" y1="10" x2="62" y2="86" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><line x1="62" y1="10" x2="10" y2="86" stroke="currentColor" stroke-width="14" stroke-linecap="round"/></svg></div>
+      <div id="svg-scissors" style="display:none;align-items:center;justify-content:center;height:clamp(148px,34vw,198px);color:var(--text)"><svg viewBox="0 0 72 96" width="75" height="100"><line x1="10" y1="10" x2="62" y2="86" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><line x1="62" y1="10" x2="10" y2="86" stroke="currentColor" stroke-width="14" stroke-linecap="round"/></svg></div>
       <div class="obj-lbl">Scissors</div>
     </div>
 
@@ -714,14 +698,6 @@ body {
 </div>
 
 <!-- P2 -->
-<div class="p2-row" id="p2row">
-  <div class="p2-lbl">Player 2</div>
-  <div class="p2-btns">
-    <button class="p2-btn" id="p2r" onclick="pickP2('rock')">Rock</button>
-    <button class="p2-btn" id="p2p" onclick="pickP2('paper')">Paper</button>
-    <button class="p2-btn" id="p2s" onclick="pickP2('scissors')">Scissors</button>
-  </div>
-</div>
 
 <!-- PLAY -->
 <div class="play-row">
@@ -730,12 +706,7 @@ body {
 
 <!-- CHALLENGE BUTTON ROW -->
 <div class="play-row" style="margin-top:5px">
-  <button class="chal-btn" id="chal-btn" onclick="openCh()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.4 1.12 2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16z"/>
-    </svg>
-    Challenge a Friend
-  </button>
+  <button class="chal-btn" id="chal-btn" onclick="openCh()">Send Challenge</button>
 </div>
 
 <!-- CHALLENGE OVERLAY -->
@@ -913,21 +884,29 @@ let hist=[], busy=false, gameOver=false;
 // ══════════════════════════════════════
 //  THEME
 // ══════════════════════════════════════
-function updateNetBadge() {
-  var b=document.getElementById('ob'), s=b.querySelector('span');
-  if(navigator.onLine){b.className='online-badge show-badge';s.textContent='Online';b.querySelector('.ob-dot').style.background='var(--win)';}
-  else{b.className='online-badge show-badge';s.textContent='Offline';b.querySelector('.ob-dot').style.background='var(--lose)';}
+function updateNetBadge(state) {
+  var b = document.getElementById('ob');
+  var dot = b.querySelector('.ob-dot');
+  var lbl = b.querySelector('span');
+  b.className = 'online-badge';
+  if (state === 'match') {
+    b.classList.add('badge-match'); dot.style.background='#3b9eff'; lbl.textContent='Match';
+  } else if (!navigator.onLine) {
+    b.classList.add('badge-offline'); dot.style.background='var(--lose)'; lbl.textContent='Offline';
+  } else {
+    b.classList.add('badge-online'); dot.style.background='var(--win)'; lbl.textContent='Online';
+  }
 }
 function loadImages(t) {
   var offline = !navigator.onLine;
   C.forEach(function(c) {
     var img = document.getElementById('i-'+c);
     var svg = document.getElementById('svg-'+c);
-    if (offline) { img.style.display='none'; svg.style.display='flex'; return; }
-    img.onerror = function() { img.style.display='none'; svg.style.display='flex'; };
+    if (offline) { img.style.display='none'; if(svg) svg.style.display='flex'; return; }
+    img.onerror = function() { img.style.display='none'; if(svg) svg.style.display='flex'; };
     img.src = IMGS[c][t];
     img.style.display = '';
-    svg.style.display = 'none';
+    if(svg) svg.style.display = 'none';
   });
 }
 function applyTheme(t) {
@@ -942,10 +921,6 @@ function toggleTheme() { applyTheme(theme==='light'?'dark':'light'); }
 // ══════════════════════════════════════
 function setMode(m) {
   mode = m;
-  document.querySelectorAll('.mode button').forEach((b,i) =>
-    b.classList.toggle('active', (i===0&&m==='cpu')||(i===1&&m==='p2'))
-  );
-  document.getElementById('p2row').classList.toggle('on', m==='p2');
   document.getElementById('p2lbl').textContent = m==='p2' ? 'P2' : 'CPU';
   softReset();
 }
@@ -977,8 +952,7 @@ function pickP2(c) {
 }
 
 function updatePlayBtn() {
-  const ok = mode==='cpu' ? !!p1c : (!!p1c&&!!p2c);
-  document.getElementById('pbtn').disabled = !ok||busy||gameOver;
+  document.getElementById('pbtn').disabled = !p1c||busy||gameOver;
 }
 
 // ══════════════════════════════════════
@@ -1050,7 +1024,6 @@ async function startRound() {
   if (busy||gameOver||!p1c) return;
   busy = true;
   document.getElementById('pbtn').disabled = true;
-  document.querySelectorAll('.p2-btn').forEach(b=>b.disabled=true);
 
   await runIntro();
   await runCountdown();
@@ -1109,8 +1082,17 @@ function showBattle(myC, oppC, res) {
 
   const oppImg = document.createElement('img');
   oppImg.id = 'i-opp';
+  oppImg.alt = oppC; oppImg.decoding = 'async';
+  const svgMap = {
+    rock: '<svg viewBox="0 0 100 100" width="90" height="90"><circle cx="50" cy="50" r="46" fill="currentColor"/></svg>',
+    paper: '<svg viewBox="0 0 100 100" width="90" height="90"><rect x="8" y="8" width="84" height="84" rx="10" fill="currentColor"/></svg>',
+    scissors: '<svg viewBox="0 0 72 96" width="65" height="87"><line x1="10" y1="10" x2="62" y2="86" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><line x1="62" y1="10" x2="10" y2="86" stroke="currentColor" stroke-width="14" stroke-linecap="round"/></svg>'
+  };
+  const oppSvg = document.createElement('div');
+  oppSvg.style.cssText = 'display:none;align-items:center;justify-content:center;color:var(--text)';
+  oppSvg.innerHTML = svgMap[oppC];
+  oppImg.onerror = function() { oppImg.style.display='none'; oppSvg.style.display='flex'; };
   oppImg.src = IMGS[oppC][theme];
-  oppImg.alt = oppC;
 
   // Size matching
   const H = {rock:'clamp(140px,32vw,190px)', paper:'clamp(110px,25vw,155px)', scissors:'clamp(148px,34vw,198px)'};
@@ -1126,6 +1108,7 @@ function showBattle(myC, oppC, res) {
   lbl.textContent = oppC[0].toUpperCase()+oppC.slice(1);
 
   oppEl.appendChild(oppImg);
+  oppEl.appendChild(oppSvg);
   oppEl.appendChild(lbl);
   stage.appendChild(oppEl);
 
@@ -1183,14 +1166,7 @@ function bump(id) {
   el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
 }
 
-function updateBf5Dots() {
-  for(let i=0;i<5;i++) {
-    const d=document.getElementById('d'+i);
-    d.className='bf5-dot';
-    if(i<bf5[0]) d.classList.add('p1');
-    else if(i>=5-bf5[1]) d.classList.add('p2');
-  }
-}
+function updateBf5Dots() { /* bf5 dots removed from UI */ }
 
 // ══════════════════════════════════════
 //  WIN OVERLAY + CONFETTI
@@ -1280,8 +1256,7 @@ function resetRound() {
   document.getElementById('rpill').className='rpill';
   document.getElementById('rsub').className='rsub';
   C.forEach(x=>document.getElementById('p2'+x[0]).classList.remove('on'));
-  document.querySelectorAll('.p2-btn').forEach(b=>b.disabled=false);
-  updatePlayBtn();
+    updatePlayBtn();
 }
 
 function softReset() {
@@ -1311,8 +1286,8 @@ function renderHist() {
 applyTheme(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
 updatePlayBtn();
 updateNetBadge();
-window.addEventListener('online',  () => { loadImages(theme); updateNetBadge(); if(bgmPlaying && bgm.paused) bgm.play().catch(()=>{}); });
-window.addEventListener('offline', () => { loadImages(theme); updateNetBadge(); if(!bgm.paused) bgm.pause(); });
+window.addEventListener('online',  function() { loadImages(theme); updateNetBadge(); if(bgmPlaying && bgm.paused) bgm.play().catch(function(){}); });
+window.addEventListener('offline', function() { loadImages(theme); updateNetBadge(); if(!bgm.paused) bgm.pause(); });
 // ════════════════════════════════════════════════════════════
 //  ONLINE MULTIPLAYER  (PeerJS WebRTC — additive only)
 //  Does NOT modify any existing variables or functions.
@@ -1463,6 +1438,9 @@ function mpOnDisconnect() {
   mpActive = false;
   document.getElementById('ob').classList.remove('show');
   document.getElementById('p2lbl').textContent = 'CPU';
+  updateNetBadge();
+  document.getElementById('chal-btn').textContent = 'Send Challenge';
+  document.getElementById('chal-btn').classList.remove('match-accepted');
   // Notify via result pill
   const pill = document.getElementById('rpill');
   pill.textContent = 'Friend disconnected';
